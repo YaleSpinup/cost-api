@@ -1,0 +1,18 @@
+{ 
+  "listenAddress": ":8080",
+  "accounts": {
+    "spinup": {
+      "region": "us-east-1",
+      "akid": "{{ .spinup_akid }}",
+      "secret": "{{ .spinup_secret }}"
+    },
+    "spinupsec": {
+      "region": "us-east-1",
+      "akid": "{{ .spinupsec_akid }}",
+      "secret": "{{ .spinupsec_secret }}"
+    }
+  },
+  "token": "{{ .api_token }}",
+  "logLevel": "{{ .log_level }}",
+  "org": "{{ .spinup_org }}"
+}
