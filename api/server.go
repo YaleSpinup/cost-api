@@ -43,7 +43,7 @@ func NewServer(config common.Config) error {
 	}
 	Org = config.Org
 
-	// Create a shared S3 session
+	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)

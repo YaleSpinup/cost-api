@@ -59,7 +59,7 @@ spec:
           readOnly: true
         livenessProbe:
           httpGet:
-            path: /v1/s3/ping
+            path: /v1/cost/ping
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 3
