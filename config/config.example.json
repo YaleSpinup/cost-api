@@ -1,0 +1,13 @@
+{ 
+  "listenAddress": ":8080",
+  "accounts": {
+    "spinup": {
+      "region": "us-east-1",
+      "akid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "secret": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    }
+  },
+  "token": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb",
+  "logLevel": "debug",
+  "org": "localdev"
+}
