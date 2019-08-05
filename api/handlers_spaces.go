@@ -33,6 +33,11 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("getting costs for space %s", spaceID)
 
 	y, m, d := time.Now().Date()
+
+	// if it's the first day of the month, get todays usage thus far
+	if d == 1 {
+		d = 2
+	}
 	input := costexplorer.GetCostAndUsageInput{
 		Filter: &costexplorer.Expression{
 			And: []*costexplorer.Expression{
@@ -45,24 +50,31 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 					},
 				},
 				&costexplorer.Expression{
-					Tags: &costexplorer.TagValues{
-						Key: aws.String("yale:org"),
-						Values: []*string{
-							aws.String(Org),
+					Or: []*costexplorer.Expression{
+						&costexplorer.Expression{
+							Tags: &costexplorer.TagValues{
+								Key: aws.String("yale:org"),
+								Values: []*string{
+									aws.String(Org),
+								},
+							},
+						},
+						&costexplorer.Expression{
+							Tags: &costexplorer.TagValues{
+								Key: aws.String("spinup:org"),
+								Values: []*string{
+									aws.String(Org),
+								},
+							},
 						},
 					},
 				},
 			},
 		},
 		Granularity: aws.String("MONTHLY"),
-		GroupBy: []*costexplorer.GroupDefinition{
-			&costexplorer.GroupDefinition{
-				Key:  aws.String("SERVICE"),
-				Type: aws.String("DIMENSION"),
-			},
-		},
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
+			aws.String("UNBLENDED_COST"),
 			aws.String("USAGE_QUANTITY"),
 		},
 		TimePeriod: &costexplorer.DateInterval{
