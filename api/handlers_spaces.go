@@ -69,6 +69,28 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 						},
 					},
 				},
+				&costexplorer.Expression{
+					Not: &costexplorer.Expression{
+						Or: []*costexplorer.Expression{
+							&costexplorer.Expression{
+								Tags: &costexplorer.TagValues{
+									Key: aws.String("yale:subsidized"),
+									Values: []*string{
+										aws.String("true"),
+									},
+								},
+							},
+							&costexplorer.Expression{
+								Tags: &costexplorer.TagValues{
+									Key: aws.String("spinup:subsidized"),
+									Values: []*string{
+										aws.String("true"),
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 		Granularity: aws.String("MONTHLY"),
