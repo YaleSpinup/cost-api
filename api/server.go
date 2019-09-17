@@ -11,8 +11,20 @@ import (
 	"github.com/YaleSpinup/cost-api/costexplorer"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	cache "github.com/patrickmn/go-cache"
 
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	//Org will carry throughout the api and get tagged on resources
+	Org string
+
+	// CostsCache is an in-memory cache for cost-explorer costs
+	//CostsCache *cache.Cache
+
+	// StatusCaches is a map of in-memory caches for resource index status
+	StatusCaches = make(map[string]*cache.Cache)
 )
 
 type server struct {
@@ -20,10 +32,8 @@ type server struct {
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
+	//mycache              *cache.Cache
 }
-
-// Org will carry throughout the api and get tagged on resources
-var Org string
 
 // NewServer creates a new server and starts it
 func NewServer(config common.Config) error {
@@ -36,6 +46,7 @@ func NewServer(config common.Config) error {
 		version:              config.Version,
 		context:              ctx,
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
+		//mycache:              CostsCache,
 	}
 
 	if config.Org == "" {
@@ -43,10 +54,18 @@ func NewServer(config common.Config) error {
 	}
 	Org = config.Org
 
+	// Create a cache with no default expiry and a 15 minute cleanup time
+	//CostsCache = cache.New(cache.NoExpiration, 15*time.Minute)
+
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
+
+		// Create a cache with a 4 hour default expiry and a 15 minute cleanup time per provider
+		StatusCaches[name] = cache.New(3*time.Hour, 15*time.Minute)
+
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
+
 	}
 
 	publicURLs := map[string]string{

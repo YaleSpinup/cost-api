@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/gorilla/mux"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
@@ -105,12 +106,26 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	out, err := ceService.GetCostAndUsage(r.Context(), &input)
-	if err != nil {
-		msg := fmt.Sprintf("failed to get costs for space %s: %s", spaceID, err.Error())
-		handleError(w, errors.Wrap(err, msg))
-		return
+	var out []*costexplorer.ResultByTime
+
+	c, ok := StatusCaches[account].Get(spaceID)
+	if !ok || c == nil {
+		log.Debugf("Got !ok: calling Cost-API: %s", Org)
+		//deliver s.costExplorerServices[name] from cache
+		out, err := ceService.GetCostAndUsage(r.Context(), &input)
+		if err != nil {
+			msg := fmt.Sprintf("failed to get costs for space %s: %s", spaceID, err.Error())
+			handleError(w, errors.Wrap(err, msg))
+			return
+		}
+		StatusCaches[account].Set(spaceID, out, cache.DefaultExpiration)
+	} else {
+		log.Debugf("print cached object: %s", c)
 	}
+
+	//if c != nil {
+	//out = *c[]*costexplorer.ResultByTime
+	//}
 
 	j, err := json.Marshal(out)
 	if err != nil {

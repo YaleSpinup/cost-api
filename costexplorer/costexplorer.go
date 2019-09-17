@@ -12,7 +12,7 @@ import (
 
 // CostExplorer is a wrapper around the aws costexplorer service with some default config info
 type CostExplorer struct {
-	Service         costexploreriface.CostExplorerAPI
+	Service costexploreriface.CostExplorerAPI
 }
 
 // NewSession creates a new costexplorer session
@@ -20,8 +20,8 @@ func NewSession(account common.Account) CostExplorer {
 	c := CostExplorer{}
 	log.Infof("creating new aws session for costexplorer with key id %s in region %s", account.Akid, account.Region)
 	sess := session.Must(session.NewSession(&aws.Config{
-			Credentials: credentials.NewStaticCredentials(account.Akid, account.Secret, ""),
-			Region:      aws.String(account.Region),
+		Credentials: credentials.NewStaticCredentials(account.Akid, account.Secret, ""),
+		Region:      aws.String(account.Region),
 	}))
 	c.Service = costexplorer.New(sess)
 	return c
