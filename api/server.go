@@ -20,9 +20,6 @@ var (
 	//Org will carry throughout the api and get tagged on resources
 	Org string
 
-	// CostsCache is an in-memory cache for cost-explorer costs
-	//CostsCache *cache.Cache
-
 	// StatusCaches is a map of in-memory caches for resource index status
 	StatusCaches = make(map[string]*cache.Cache)
 )
@@ -32,7 +29,6 @@ type server struct {
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
-	//mycache              *cache.Cache
 }
 
 // NewServer creates a new server and starts it
@@ -46,26 +42,45 @@ func NewServer(config common.Config) error {
 		version:              config.Version,
 		context:              ctx,
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
-		//mycache:              CostsCache,
 	}
 
 	if config.Org == "" {
 		return errors.New("'org' cannot be empty in the configuration")
 	}
 	Org = config.Org
+	expireTime, err := time.ParseDuration(config.CacheExpireTime)
+	if err != nil {
+		log.Warn("Unexpected error with configured expireTime")
+		// set default expireTime
+		expireTime, _ = time.ParseDuration("4h")
+	}
+	purgeTime, err := time.ParseDuration(config.CachePurgeTime)
+	if err != nil {
+		log.Warn("Unexpected error with configured purgeTime")
+		//set default purgeTime
+		expireTime, _ = time.ParseDuration("15m")
+	}
 
-	// Create a cache with no default expiry and a 15 minute cleanup time
-	//CostsCache = cache.New(cache.NoExpiration, 15*time.Minute)
+	/*
+		if config.CacheExpireTime == nil {
+			CacheExpireTime = 4 * time.Hour
+		} else {
+			CacheExpireTime = config.CacheExpireTime
+		}
+		if config.CachePurgeTime == nil {
+			CachePurgeTime = 4 * time.Hour
+		} else {
+			CachePurgeTime = config.CachePurgeTime
+		}
+	*/
 
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
+		// Create a cache with a 4 hour default expiry and a 15 minute default purge time per provider
+		StatusCaches[name] = cache.New(expireTime, purgeTime)
+
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
-
-		// Create a cache with a 4 hour default expiry and a 15 minute cleanup time per provider
-		StatusCaches[name] = cache.New(3*time.Hour, 15*time.Minute)
-
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
-
 	}
 
 	publicURLs := map[string]string{
