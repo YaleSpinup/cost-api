@@ -14,5 +14,7 @@
   },
   "token": "{{ .api_token }}",
   "logLevel": "{{ .log_level }}",
-  "org": "{{ .spinup_org }}"
+  "org": "{{ .spinup_org }}",
+  "cacheExpireTime": "{{ .cache_expire_time }}",
+  "cachePurgeTime": "{{ .cache_purge_time }}"
 }

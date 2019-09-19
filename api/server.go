@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -17,11 +18,11 @@ import (
 )
 
 var (
-	//Org will carry throughout the api and get tagged on resources
+	// Org will carry throughout the api and get tagged on resources
 	Org string
 
-	// StatusCaches is a map of in-memory caches for resource index status
-	StatusCaches = make(map[string]*cache.Cache)
+	// ResultsCache is a map of in-memory caches
+	ResultsCache = make(map[string]*cache.Cache)
 )
 
 type server struct {
@@ -48,36 +49,29 @@ func NewServer(config common.Config) error {
 		return errors.New("'org' cannot be empty in the configuration")
 	}
 	Org = config.Org
+
 	expireTime, err := time.ParseDuration(config.CacheExpireTime)
 	if err != nil {
-		log.Warn("Unexpected error with configured expireTime")
+		log.Warn("Unexpected error with configured expiretime")
+	}
+	if fmt.Sprintf(expireTime.String()) == "" {
 		// set default expireTime
 		expireTime, _ = time.ParseDuration("4h")
 	}
+
 	purgeTime, err := time.ParseDuration(config.CachePurgeTime)
 	if err != nil {
-		log.Warn("Unexpected error with configured purgeTime")
-		//set default purgeTime
-		expireTime, _ = time.ParseDuration("15m")
+		log.Warn("Unexpected error with configured purgetime")
 	}
-
-	/*
-		if config.CacheExpireTime == nil {
-			CacheExpireTime = 4 * time.Hour
-		} else {
-			CacheExpireTime = config.CacheExpireTime
-		}
-		if config.CachePurgeTime == nil {
-			CachePurgeTime = 4 * time.Hour
-		} else {
-			CachePurgeTime = config.CachePurgeTime
-		}
-	*/
+	if fmt.Sprintf(purgeTime.String()) == "" {
+		// set default purgeTime
+		purgeTime, _ = time.ParseDuration("15m")
+	}
 
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
-		// Create a cache with a 4 hour default expiry and a 15 minute default purge time per provider
-		StatusCaches[name] = cache.New(expireTime, purgeTime)
+		// Create a cache with a 4 hour default expiry and a 15 minute default purge time
+		ResultsCache[name] = cache.New(expireTime, purgeTime)
 
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
