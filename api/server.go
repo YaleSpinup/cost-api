@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -50,22 +49,24 @@ func NewServer(config common.Config) error {
 	}
 	Org = config.Org
 
+	if config.CacheExpireTime == "" {
+		// set default expireTime
+		config.CacheExpireTime = "4h"
+	}
+
 	expireTime, err := time.ParseDuration(config.CacheExpireTime)
 	if err != nil {
 		log.Warn("Unexpected error with configured expiretime")
 	}
-	if fmt.Sprintf(expireTime.String()) == "" {
-		// set default expireTime
-		expireTime, _ = time.ParseDuration("4h")
+
+	if config.CachePurgeTime == "" {
+		// set default purgeTime
+		config.CachePurgeTime = "15m"
 	}
 
 	purgeTime, err := time.ParseDuration(config.CachePurgeTime)
 	if err != nil {
 		log.Warn("Unexpected error with configured purgetime")
-	}
-	if fmt.Sprintf(purgeTime.String()) == "" {
-		// set default purgeTime
-		purgeTime, _ = time.ParseDuration("15m")
 	}
 
 	// Create a shared Cost Explorer session
