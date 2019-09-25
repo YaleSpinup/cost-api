@@ -9,5 +9,7 @@
   },
   "token": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb",
   "logLevel": "debug",
-  "org": "localdev"
+  "org": "localdev",
+  "cacheExpireTime": "4h",
+  "cachePurgeTime": "15m"
 }

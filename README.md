@@ -30,6 +30,9 @@ GET /v1/cost/{account}/spaces/{spaceid}
 }
 ```
 
+## Caching
+Caching data (using go-cache) from AWS Cost Explorer configurable via config.json: CacheExpireTime and CachePurgeTIme.  The cache can also be purged via daemon restart. 
+
 ## Authentication
 
 Authentication is accomplished via a pre-shared key.  This is done via the `X-Auth-Token` header.
