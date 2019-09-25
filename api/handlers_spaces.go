@@ -125,6 +125,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		// The go-cache object was found cached
 		out = c.([]*costexplorer.ResultByTime)
 		log.Debugf("found cached object: %s", out)
+		w.Header().Set("X-Serving-From-Cache", "true")
 	}
 
 	j, err := json.Marshal(out)
