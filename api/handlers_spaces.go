@@ -108,7 +108,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 
 	// the object is not found in the cache, call AWS cost-explorer and set cache
 	var out []*costexplorer.ResultByTime
-	c, ok := ResultsCache[account].Get(spaceID)
+	c, expire, ok := ResultsCache[account].GetWithExpiration(spaceID)
 	if !ok || c == nil {
 		log.Debugf("cache empty for org, space: %s, %s, calling cost-explorer", Org, spaceID)
 		// call cost-explorer
@@ -126,6 +126,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		out = c.([]*costexplorer.ResultByTime)
 		log.Debugf("found cached object: %s", out)
 		w.Header().Set("X-Cache-Hit", "true")
+		w.Header().Set("X-Cache-Expire", fmt.Sprintf("%0.fs", time.Until(expire).Seconds()))
 	}
 
 	j, err := json.Marshal(out)
