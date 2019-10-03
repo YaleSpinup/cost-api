@@ -69,6 +69,8 @@ func NewServer(config common.Config) error {
 		log.Warn("Unexpected error with configured purgetime")
 	}
 
+	log.Debugf("default cache expire time is: %s", cache.DefaultExpiration.String())
+
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
 		// Create a cache with a 4 hour default expiry and a 15 minute default purge time
@@ -77,6 +79,8 @@ func NewServer(config common.Config) error {
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
 	}
+
+	log.Debugf("default cache expire time is: %s", cache.DefaultExpiration.String())
 
 	publicURLs := map[string]string{
 		"/v1/cost/ping":    "public",

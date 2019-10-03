@@ -120,7 +120,8 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// cache results
-		ResultsCache[account].Set(spaceID, out, cache.DefaultExpiration)
+		ResultsCache[account].Set(spaceID, out, 5*time.Minute)
+		// ResultsCache[account].Set(spaceID, out, cache.DefaultExpiration)
 	} else {
 		// The go-cache object was found cached
 		out = c.([]*costexplorer.ResultByTime)
@@ -128,6 +129,8 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Cache-Hit", "true")
 		w.Header().Set("X-Cache-Expire", fmt.Sprintf("%0.fs", time.Until(expire).Seconds()))
 	}
+
+	log.Debugf("default cache expire time is: %s", cache.DefaultExpiration.String())
 
 	j, err := json.Marshal(out)
 	if err != nil {
