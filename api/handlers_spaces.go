@@ -131,7 +131,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		// cache results
 		// resultCache.Set(spaceID, out, 5*time.Minute)
 		// ResultsCache[account].Set(spaceID, out, cache.DefaultExpiration)
-		resultCache.Set(spaceID, out, cache.DefaultExpiration)
+		resultCache.SetDefault(spaceID, out)
 	} else {
 		// The go-cache object was found cached
 		out = c.([]*costexplorer.ResultByTime)
