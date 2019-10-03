@@ -21,7 +21,7 @@ var (
 	Org string
 
 	// ResultsCache is a map of in-memory caches
-	ResultsCache = make(map[string]*cache.Cache)
+	// ResultsCache = make(map[string]*cache.Cache)
 )
 
 type server struct {
@@ -29,6 +29,7 @@ type server struct {
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
+	resultCache          map[string]*cache.Cache
 }
 
 // NewServer creates a new server and starts it
@@ -42,6 +43,7 @@ func NewServer(config common.Config) error {
 		version:              config.Version,
 		context:              ctx,
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
+		resultCache:          make(map[string]*cache.Cache),
 	}
 
 	if config.Org == "" {
@@ -73,11 +75,12 @@ func NewServer(config common.Config) error {
 
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
-		// Create a cache with a 4 hour default expiry and a 15 minute default purge time
-		ResultsCache[name] = cache.New(expireTime, purgeTime)
-
 		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
+
+		// Create a cache with a 4 hour default expiry and a 15 minute default purge time
+		// ResultsCache[name] = cache.New(expireTime, purgeTime)
+		s.resultCache[name] = cache.New(expireTime, purgeTime)
 	}
 
 	log.Debugf("default cache expire time is: %s", cache.DefaultExpiration.String())
