@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/gorilla/mux"
-	cache "github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
@@ -29,6 +28,14 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Debugf("found cost explorer service %+v", ceService)
+
+	resultCache, ok := s.resultCache[account]
+	if !ok {
+		msg := fmt.Sprintf("result cache not found for account: %s", account)
+		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+		return
+	}
+	log.Debugf("found cost explorer result cache %+v", *resultCache)
 
 	spaceID := vars["space"]
 	log.Debugf("getting costs for space %s", spaceID)
@@ -108,7 +115,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 
 	// the object is not found in the cache, call AWS cost-explorer and set cache
 	var out []*costexplorer.ResultByTime
-	c, ok := ResultsCache[account].Get(spaceID)
+	c, expire, ok := resultCache.GetWithExpiration(spaceID)
 	if !ok || c == nil {
 		log.Debugf("cache empty for org, space: %s, %s, calling cost-explorer", Org, spaceID)
 		// call cost-explorer
@@ -119,13 +126,15 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			handleError(w, errors.Wrap(err, msg))
 			return
 		}
+
 		// cache results
-		ResultsCache[account].Set(spaceID, out, cache.DefaultExpiration)
+		resultCache.SetDefault(spaceID, out)
 	} else {
-		// The go-cache object was found cached
+		// cached object was found
 		out = c.([]*costexplorer.ResultByTime)
 		log.Debugf("found cached object: %s", out)
 		w.Header().Set("X-Cache-Hit", "true")
+		w.Header().Set("X-Cache-Expire", fmt.Sprintf("%0.fs", time.Until(expire).Seconds()))
 	}
 
 	j, err := json.Marshal(out)

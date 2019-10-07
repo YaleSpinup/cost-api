@@ -19,9 +19,6 @@ import (
 var (
 	// Org will carry throughout the api and get tagged on resources
 	Org string
-
-	// ResultsCache is a map of in-memory caches
-	ResultsCache = make(map[string]*cache.Cache)
 )
 
 type server struct {
@@ -29,6 +26,7 @@ type server struct {
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
+	resultCache          map[string]*cache.Cache
 }
 
 // NewServer creates a new server and starts it
@@ -42,6 +40,7 @@ func NewServer(config common.Config) error {
 		version:              config.Version,
 		context:              ctx,
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
+		resultCache:          make(map[string]*cache.Cache),
 	}
 
 	if config.Org == "" {
@@ -51,31 +50,35 @@ func NewServer(config common.Config) error {
 
 	if config.CacheExpireTime == "" {
 		// set default expireTime
+		log.Info("setting default cache expire time to 4h")
 		config.CacheExpireTime = "4h"
 	}
 
 	expireTime, err := time.ParseDuration(config.CacheExpireTime)
 	if err != nil {
-		log.Warn("Unexpected error with configured expiretime")
+		log.Error("Unexpected error with configured expiretime")
+		return err
 	}
 
 	if config.CachePurgeTime == "" {
 		// set default purgeTime
+		log.Info("setting default cache purge time to 15m")
 		config.CachePurgeTime = "15m"
 	}
 
 	purgeTime, err := time.ParseDuration(config.CachePurgeTime)
 	if err != nil {
-		log.Warn("Unexpected error with configured purgetime")
+		log.Error("Unexpected error with configured purgetime")
+		return err
 	}
 
 	// Create a shared Cost Explorer session
 	for name, c := range config.Accounts {
-		// Create a cache with a 4 hour default expiry and a 15 minute default purge time
-		ResultsCache[name] = cache.New(expireTime, purgeTime)
-
-		log.Debugf("Creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
+		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
+
+		log.Debugf("creating new result cache for account '%s' with expire time: %s and purge time: %s", name, expireTime.String(), purgeTime.String())
+		s.resultCache[name] = cache.New(expireTime, purgeTime)
 	}
 
 	publicURLs := map[string]string{
