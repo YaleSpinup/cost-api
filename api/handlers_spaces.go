@@ -46,6 +46,9 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("getting costs for space %s", spaceID)
 
 	// Did we get cost-explorer start and end times on the API?
+	// todo:
+	//   verify that end date is after start date.
+	//   write unit test
 	if endTime == "" || startTime == "" {
 		// if it's the first day of the month, get today's usage thus far
 		y, m, d := time.Now().Date()
