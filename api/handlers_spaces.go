@@ -20,7 +20,12 @@ import (
 func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
+	for k, v := range mux.Vars(r) {
+		log.Debugf("key=%v, value=%v", k, v)
+	}
 	account := vars["account"]
+	endTime := vars["EndTime"]
+	startTime := vars["StartTime"]
 	ceService, ok := s.costExplorerServices[account]
 	if !ok {
 		msg := fmt.Sprintf("cost explorer service not found for account: %s", account)
@@ -40,12 +45,33 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	spaceID := vars["space"]
 	log.Debugf("getting costs for space %s", spaceID)
 
-	y, m, d := time.Now().Date()
+	// Did we get cost-explorer start and end times on the API?
+	if endTime == "" || startTime == "" {
+		// if it's the first day of the month, get today's usage thus far
+		y, m, d := time.Now().Date()
+		if d == 1 {
+			d = 2
+		}
 
-	// if it's the first day of the month, get todays usage thus far
-	if d == 1 {
-		d = 2
+		endTime = fmt.Sprintf("%d-%02d-%02d", y, m, d)
+		startTime = fmt.Sprintf("%d-%02d-01", y, m)
+
+	} else {
+		sTime, err := time.Parse("1066-01-01", startTime)
+		if err != nil {
+			log.Infof("error parsing startTime: %s", err)
+			// do we do something more interesting here?  Throw an HTTP code API , such as ErrBadRequest
+		}
+		eTime, err := time.Parse("1066-01-01", endTime)
+		if err != nil {
+			log.Infof("error parsing endTime: %s", err)
+			// do we do something more interesting here?  Throw an HTTP code API , such as ErrBadRequest
+		}
+
+		log.Debugf("endTime t: %+v", eTime)
+		log.Debugf("startTime t: %+v", sTime)
 	}
+
 	input := costexplorer.GetCostAndUsageInput{
 		Filter: &costexplorer.Expression{
 			And: []*costexplorer.Expression{
@@ -108,27 +134,34 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			aws.String("USAGE_QUANTITY"),
 		},
 		TimePeriod: &costexplorer.DateInterval{
-			End:   aws.String(fmt.Sprintf("%d-%02d-%02d", y, m, d)),
-			Start: aws.String(fmt.Sprintf("%d-%02d-01", y, m)),
+			End:   aws.String(endTime),
+			Start: aws.String(startTime),
 		},
 	}
 
+	// create a cacheKey more unique than spaceID for managing cache objects.
+	// Since we will accept date-range cost exploring, concatenate the spaceID
+	// and the start and end time so we can cache each time-based result
+	var cacheKey string
+	cacheKey = fmt.Sprintf("%s_%s_%s", spaceID, startTime, endTime)
+	log.Debugf("cacheKey: %s", cacheKey)
+
 	// the object is not found in the cache, call AWS cost-explorer and set cache
 	var out []*costexplorer.ResultByTime
-	c, expire, ok := resultCache.GetWithExpiration(spaceID)
+	c, expire, ok := resultCache.GetWithExpiration(cacheKey)
 	if !ok || c == nil {
-		log.Debugf("cache empty for org, space: %s, %s, calling cost-explorer", Org, spaceID)
+		log.Debugf("cache empty for org, and space-cacheKey: %s, %s, calling cost-explorer", Org, cacheKey)
 		// call cost-explorer
 		var err error
 		out, err = ceService.GetCostAndUsage(r.Context(), &input)
 		if err != nil {
-			msg := fmt.Sprintf("failed to get costs for space %s: %s", spaceID, err.Error())
+			msg := fmt.Sprintf("failed to get costs for space %s: %s", cacheKey, err.Error())
 			handleError(w, errors.Wrap(err, msg))
 			return
 		}
 
 		// cache results
-		resultCache.SetDefault(spaceID, out)
+		resultCache.SetDefault(cacheKey, out)
 	} else {
 		// cached object was found
 		out = c.([]*costexplorer.ResultByTime)
@@ -147,4 +180,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(j)
+
+	log.Debugf("print endTime: %s", endTime)
+	log.Debugf("print startTime: %s", startTime)
 }
