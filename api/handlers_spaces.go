@@ -48,6 +48,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Debugf("found cost explorer result cache %+v", *resultCache)
 
+	// vars for checking input times parse and are valid
 	timeValidity := false
 	var scleansedTime string
 	var ecleansedTime string
@@ -64,12 +65,13 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		ecleansedTime = fmt.Sprintf("%d-%02d-%02d", y, m, d)
 		scleansedTime = fmt.Sprintf("%d-%02d-01", y, m)
 		timeValidity = true
-
 	} else {
 		// working vars for time verification
 		var sTime string
 		var eTime string
 		var badTime bool
+
+		// debugging verbosity
 		log.Debugf("startTime: %s", startTime)
 		log.Debugf("endTime: %s", endTime)
 
@@ -96,12 +98,13 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 
 		// if time on the API input is already borked, don't continue
 		if badTime == false {
+			// end time is greater than start time, logically
 			if eTime > sTime {
 				scleansedTime = startTime
 				ecleansedTime = endTime
 				timeValidity = true
 			} else {
-				msg := fmt.Sprint("endTime should be greater that StartTime\n")
+				msg := fmt.Sprint("endTime should be greater that startTime\n")
 				handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
 			}
 		}
@@ -174,6 +177,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// if time did not parse correctly, don't call AWS cost explorer
 	if timeValidity == true {
 		// create a cacheKey more unique than spaceID for managing cache objects.
 		// Since we will accept date-range cost exploring, concatenate the spaceID
