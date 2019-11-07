@@ -10,6 +10,7 @@ GET /v1/cost/version
 GET /v1/cost/metrics
 
 GET /v1/cost/{account}/spaces/{spaceid}
+GET /v1/cost/{account}/spaces/{spaceid}?StartTime=2019-10-01&EndTime=2019-10-30
 ```
 
 ## Usage
