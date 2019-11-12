@@ -94,19 +94,11 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		// if time on the API input is already borked, don't continue
 		// end time is greater than start time, logically
 		timeValidity = eTmp.After(sTmp)
-		log.Debugf("timeValidity value: %v", timeValidity)
-		log.Debugf("startTime value: %s", startTime)
-		log.Debugf("endTime value: %s", endTime)
-		log.Debugf("start_inside_if value: %s", start)
-		log.Debugf("end_inside_if value: %s", end)
 		if !timeValidity {
 			msg := fmt.Sprint("endTime should be greater that startTime\n")
 			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
 		}
 	}
-
-	log.Debugf("start_outside: %s\n", start)
-	log.Debugf("end_outside: %s\n", end)
 
 	input := costexplorer.GetCostAndUsageInput{
 		Filter: &costexplorer.Expression{
