@@ -20,13 +20,13 @@ import (
 func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 
-	// loop thru given API input vars in debug
+	// loop thru and log given API input vars in debug
 	vars := mux.Vars(r)
-	for k, v := range mux.Vars(r) {
+	for k, v := range vars {
 		log.Debugf("key=%v, value=%v", k, v)
 	}
 
-	// get what we need from the API routes
+	// get vars from the API route
 	account := vars["account"]
 	startTime := vars["StartTime"]
 	endTime := vars["EndTime"]
@@ -49,9 +49,9 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("found cost explorer result cache %+v", *resultCache)
 
 	// vars for checking input times parse and are valid
-	timeValidity := false
-	var scleansedTime string
-	var ecleansedTime string
+	var timeValidity bool
+	var start string
+	var end string
 	// Did we get cost-explorer start and end times on the API?
 	// set defaults, else verify times given on API
 	if endTime == "" || startTime == "" {
@@ -62,53 +62,51 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			d = 2
 		}
 
-		ecleansedTime = fmt.Sprintf("%d-%02d-%02d", y, m, d)
-		scleansedTime = fmt.Sprintf("%d-%02d-01", y, m)
+		start = fmt.Sprintf("%d-%02d-01", y, m)
+		end = fmt.Sprintf("%d-%02d-%02d", y, m, d)
 		timeValidity = true
 	} else {
-		// working vars for time verification
-		var sTime string
-		var eTime string
-		var badTime bool
-
 		// debugging verbosity
-		log.Debugf("startTime: %s", startTime)
-		log.Debugf("endTime: %s", endTime)
+		log.Debugf("startTime: %s\nendTime: %s\n", startTime, endTime)
 
-		// set the time parse layout and do parse
-		layoutISO := "2006-01-02"
-		start, err := time.Parse(layoutISO, startTime)
+		// sTmp and eTmp temporary vars to hold time.Time, then convert
+		// both to strings
+		sTmp, err := time.Parse("2006-01-02", startTime)
 		if err != nil {
-			msg := fmt.Sprintf("error parsing startTime from input: %s\n", err)
+			msg := fmt.Sprintf("error parsing StartTime from input: %s\n", err)
 			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
-			badTime = true
+			timeValidity = false
+			return
 		}
-		end, err := time.Parse(layoutISO, endTime)
-		if err != nil {
-			msg := fmt.Sprintf("error parsing endTime from input: %s\n", err)
-			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
-			badTime = true
-		}
+		// convert time.Time to a string
+		start = fmt.Sprint(sTmp.Format("2006-01-02"))
 
-		// convert times to number string yyMMdd so we can do a math comparison
-		sTime = fmt.Sprint(start.Format("20060102"))
-		eTime = fmt.Sprint(end.Format("20060102"))
-		log.Debugf("startYYYYMMDD: %s", sTime)
-		log.Debugf("endYYYYMMDD: %s", eTime)
+		eTmp, err := time.Parse("2006-01-02", endTime)
+		if err != nil {
+			msg := fmt.Sprintf("error parsing EndTime from input: %s\n", err)
+			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
+			timeValidity = false
+			return
+		}
+		// convert time.Time to a string
+		end = fmt.Sprint(eTmp.Format("2006-01-02"))
 
 		// if time on the API input is already borked, don't continue
-		if badTime == false {
-			// end time is greater than start time, logically
-			if eTime > sTime {
-				scleansedTime = startTime
-				ecleansedTime = endTime
-				timeValidity = true
-			} else {
-				msg := fmt.Sprint("endTime should be greater that startTime\n")
-				handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
-			}
+		// end time is greater than start time, logically
+		timeValidity = eTmp.After(sTmp)
+		log.Debugf("timeValidity value: %v", timeValidity)
+		log.Debugf("startTime value: %s", startTime)
+		log.Debugf("endTime value: %s", endTime)
+		log.Debugf("start_inside_if value: %s", start)
+		log.Debugf("end_inside_if value: %s", end)
+		if !timeValidity {
+			msg := fmt.Sprint("endTime should be greater that startTime\n")
+			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
 		}
 	}
+
+	log.Debugf("start_outside: %s\n", start)
+	log.Debugf("end_outside: %s\n", end)
 
 	input := costexplorer.GetCostAndUsageInput{
 		Filter: &costexplorer.Expression{
@@ -172,8 +170,8 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			aws.String("USAGE_QUANTITY"),
 		},
 		TimePeriod: &costexplorer.DateInterval{
-			End:   aws.String(ecleansedTime),
-			Start: aws.String(scleansedTime),
+			Start: aws.String(start),
+			End:   aws.String(end),
 		},
 	}
 
