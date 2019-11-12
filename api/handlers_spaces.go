@@ -52,6 +52,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	var timeValidity bool
 	var start string
 	var end string
+
 	// Did we get cost-explorer start and end times on the API?
 	// set defaults, else verify times given on API
 	if endTime == "" || startTime == "" {
@@ -79,7 +80,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// convert time.Time to a string
-		start = fmt.Sprint(sTmp.Format("2006-01-02"))
+		start = sTmp.Format("2006-01-02")
 
 		eTmp, err := time.Parse("2006-01-02", endTime)
 		if err != nil {
@@ -89,7 +90,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// convert time.Time to a string
-		end = fmt.Sprint(eTmp.Format("2006-01-02"))
+		end = eTmp.Format("2006-01-02")
 
 		// if time on the API input is already borked, don't continue
 		// end time is greater than start time, logically
