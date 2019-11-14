@@ -15,6 +15,47 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// getTimeDefault returns time range from beginning of month to day-of-month now
+func getTimeDefault() (string, string, bool) {
+	log.Debug("no start or end time given on API input, assigning defaults")
+	// if it's the first day of the month, get today's usage thus far
+	y, m, d := time.Now().Date()
+	if d == 1 {
+		d = 3
+	}
+	return fmt.Sprintf("%d-%02d-01", y, m), fmt.Sprintf("%d-%02d-%02d", y, m, d), true
+}
+
+// timeAPI returns time parsed from API input
+func getTimeAPI(startTime, endTime string) (string, string, bool, error) {
+	// debugging verbosity
+	log.Debugf("startTime: %s\nendTime: %s\n", startTime, endTime)
+
+	// sTmp and eTmp temporary vars to hold time.Time, then convert
+	// both to strings
+	sTmp, err := time.Parse("2006-01-02", startTime)
+	if err != nil {
+		return "", "", false, errors.Wrapf(err, "error parsing StartTime from input")
+	}
+
+	eTmp, err := time.Parse("2006-01-02", endTime)
+	if err != nil {
+		return "", "", false, errors.Wrapf(err, "error parsing EndTime from input")
+	}
+
+	// if time on the API input is already borked, don't continue
+	// end time is greater than start time, logically
+	timeValidity := eTmp.After(sTmp)
+	if !timeValidity {
+		msg := "endTime should be greater than startTime\n"
+		return "", "", false, errors.Errorf(msg)
+	}
+
+	// convert time.Time to a string
+	return sTmp.Format("2006-01-02"), eTmp.Format("2006-01-02"), true, nil
+
+}
+
 // SpaceGetHandler gets the cost for a space, grouped by the service.  By default,
 // it pulls data from the start of the month until now.
 func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,52 +93,18 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	var timeValidity bool
 	var start string
 	var end string
+	var err error
 
 	// Did we get cost-explorer start and end times on the API?
 	// set defaults, else verify times given on API
 	if endTime == "" || startTime == "" {
-		log.Debug("no start or end time given on API input, assigning defaults")
-		// if it's the first day of the month, get today's usage thus far
-		y, m, d := time.Now().Date()
-		if d == 1 {
-			d = 2
-		}
-
-		start = fmt.Sprintf("%d-%02d-01", y, m)
-		end = fmt.Sprintf("%d-%02d-%02d", y, m, d)
-		timeValidity = true
+		start, end, timeValidity = getTimeDefault()
+		msg := "GOOGLEY01 got here"
+		log.Debugf(msg)
 	} else {
-		// debugging verbosity
-		log.Debugf("startTime: %s\nendTime: %s\n", startTime, endTime)
-
-		// sTmp and eTmp temporary vars to hold time.Time, then convert
-		// both to strings
-		sTmp, err := time.Parse("2006-01-02", startTime)
+		start, end, timeValidity, err = getTimeAPI(startTime, endTime)
 		if err != nil {
-			msg := fmt.Sprintf("error parsing StartTime from input: %s\n", err)
-			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
-			timeValidity = false
-			return
-		}
-		// convert time.Time to a string
-		start = sTmp.Format("2006-01-02")
-
-		eTmp, err := time.Parse("2006-01-02", endTime)
-		if err != nil {
-			msg := fmt.Sprintf("error parsing EndTime from input: %s\n", err)
-			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
-			timeValidity = false
-			return
-		}
-		// convert time.Time to a string
-		end = eTmp.Format("2006-01-02")
-
-		// if time on the API input is already borked, don't continue
-		// end time is greater than start time, logically
-		timeValidity = eTmp.After(sTmp)
-		if !timeValidity {
-			msg := fmt.Sprint("endTime should be greater that startTime\n")
-			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
+			handleError(w, apierror.New(apierror.ErrBadRequest, "", err))
 		}
 	}
 
