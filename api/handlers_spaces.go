@@ -28,11 +28,9 @@ func getTimeDefault() (string, string, bool) {
 
 // timeAPI returns time parsed from API input
 func getTimeAPI(startTime, endTime string) (string, string, bool, error) {
-	// debugging verbosity
-	log.Debugf("startTime: %s\nendTime: %s\n", startTime, endTime)
+	log.Debugf("startTime: %s, endTime: %s ", startTime, endTime)
 
-	// sTmp and eTmp temporary vars to hold time.Time, then convert
-	// both to strings
+	// sTmp and eTmp temporary vars to hold time.Time objects
 	sTmp, err := time.Parse("2006-01-02", startTime)
 	if err != nil {
 		return "", "", false, errors.Wrapf(err, "error parsing StartTime from input")
@@ -47,13 +45,11 @@ func getTimeAPI(startTime, endTime string) (string, string, bool, error) {
 	// end time is greater than start time, logically
 	timeValidity := eTmp.After(sTmp)
 	if !timeValidity {
-		msg := "endTime should be greater than startTime\n"
-		return "", "", false, errors.Errorf(msg)
+		return "", "", false, errors.Errorf("endTime should be greater than startTime")
 	}
 
 	// convert time.Time to a string
 	return sTmp.Format("2006-01-02"), eTmp.Format("2006-01-02"), true, nil
-
 }
 
 // SpaceGetHandler gets the cost for a space, grouped by the service.  By default,
@@ -99,11 +95,31 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	// set defaults, else verify times given on API
 	if endTime == "" || startTime == "" {
 		start, end, timeValidity = getTimeDefault()
-		msg := "GOOGLEY01 got here"
-		log.Debugf(msg)
 	} else {
 		start, end, timeValidity, err = getTimeAPI(startTime, endTime)
 		if err != nil {
+			// unwrap errors
+			if aerr, ok := errors.Cause(err).(apierror.Error); ok {
+				switch aerr.Code {
+				case apierror.ErrForbidden:
+					w.WriteHeader(http.StatusForbidden)
+				case apierror.ErrNotFound:
+					w.WriteHeader(http.StatusNotFound)
+				case apierror.ErrConflict:
+					w.WriteHeader(http.StatusConflict)
+				case apierror.ErrBadRequest:
+					w.WriteHeader(http.StatusBadRequest)
+				case apierror.ErrLimitExceeded:
+					w.WriteHeader(http.StatusTooManyRequests)
+				default:
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+				w.Write([]byte(aerr.Message))
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(err.Error()))
+
+			}
 			handleError(w, apierror.New(apierror.ErrBadRequest, "", err))
 		}
 	}
