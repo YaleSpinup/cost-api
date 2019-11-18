@@ -172,8 +172,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	// create a cacheKey more unique than spaceID for managing cache objects.
 	// Since we will accept date-range cost exploring, concatenate the spaceID
 	// and the start and end time so we can cache each time-based result
-	var cacheKey string
-	cacheKey = fmt.Sprintf("%s_%s_%s", spaceID, startTime, endTime)
+	cacheKey := fmt.Sprintf("%s_%s_%s", spaceID, startTime, endTime)
 	log.Debugf("cacheKey: %s", cacheKey)
 
 	// the object is not found in the cache, call AWS cost-explorer and set cache
