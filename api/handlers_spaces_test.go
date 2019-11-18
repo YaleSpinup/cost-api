@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-// getTimeDefault
 func TestGetTimeDefault(t *testing.T) {
 	// use defaults derived in code
 	startTime, endTime := getTimeDefault()
@@ -48,7 +47,6 @@ func TestGetTimeDefault(t *testing.T) {
 
 }
 
-// getTimeAPI
 func TestGetTimeAPI(t *testing.T) {
 	startTime := "2019-11-01"
 	endTime := "2019-11-30"
