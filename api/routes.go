@@ -13,7 +13,8 @@ func (s *server) routes() {
 	api.Handle("/metrics", promhttp.Handler()).Methods(http.MethodGet)
 
 	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).
-		Queries("EndTime", "{EndTime}", "StartTime", "{StartTime}").
-		Methods(http.MethodGet)
+		Queries("EndTime", "{EndTime}", "StartTime", "{StartTime}").Methods(http.MethodGet)
 	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).Methods(http.MethodGet)
+
+	api.HandleFunc("/{account}/instances/{id}/metrics/{metric}.png", s.MetricsGetHandler).Methods(http.MethodGet)
 }

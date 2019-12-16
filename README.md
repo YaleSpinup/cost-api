@@ -31,6 +31,18 @@ GET /v1/cost/{account}/spaces/{spaceid}
 }
 ```
 
+### Get cloudwatch metrics widgets for an instance ID
+
+This will get the passed metric for the passed instance ID in a `image/png` graph for the past 1 day.
+
+#### Request
+
+GET /v1/cost/{account}/instances/{id}/metrics/{metric}.png
+
+#### Response
+
+![WidgetExample](/img/example_response.png?raw=true)
+
 ## Caching
 Caching data (using go-cache) from AWS Cost Explorer configurable via config.json: CacheExpireTime and CachePurgeTIme.  The cache can also be purged via daemon restart. 
 
