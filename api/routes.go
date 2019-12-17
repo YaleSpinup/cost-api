@@ -16,5 +16,6 @@ func (s *server) routes() {
 		Queries("EndTime", "{EndTime}", "StartTime", "{StartTime}").Methods(http.MethodGet)
 	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).Methods(http.MethodGet)
 
-	api.HandleFunc("/{account}/instances/{id}/metrics/{metric}.png", s.MetricsGetHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/instances/{id}/metrics/{metric}.png", s.MetricsGetImageHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/instances/{id}/metrics/{metric}", s.MetricsGetImageUrlHandler).Methods(http.MethodGet)
 }
