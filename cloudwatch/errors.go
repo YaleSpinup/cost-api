@@ -26,7 +26,7 @@ func ErrCode(msg string, err error) error {
 
 			return apierror.New(apierror.ErrForbidden, msg, aerr)
 		case
-			// The specified bucket does not exist.
+			// The specified resource does not exist.
 			"NotFound",
 
 			// ErrCodeResourceNotFound for service response error code
