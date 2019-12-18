@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/cost-api/cloudwatch"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,6 +21,22 @@ func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) 
 	metric := vars["metric"]
 	id := vars["id"]
 
+	period := int64(300)
+	// if p, ok := vars["period"]; ok {
+	// 	// TODO p is a string, need int64
+	// 	period = p
+	// }
+
+	start := "-P1D"
+	if s, ok := vars["start"]; ok {
+		start = s
+	}
+
+	end := "PT0H"
+	if e, ok := vars["end"]; ok {
+		end = e
+	}
+
 	cwService, ok := s.cloudwatchServices[account]
 	if !ok {
 		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
@@ -28,7 +45,11 @@ func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	log.Debugf("found cloudwatch service %+v", cwService)
 
-	out, err := cwService.GetMetricWidget(r.Context(), metric, id)
+	metrics := []cloudwatch.Metric{
+		cloudwatch.Metric{"AWS/EC2", metric, "InstanceId", id},
+	}
+
+	out, err := cwService.GetMetricWidget(r.Context(), metrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)
@@ -50,6 +71,22 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 	metric := vars["metric"]
 	id := vars["id"]
 
+	period := int64(300)
+	// 	// TODO p is a string, need int64
+	// if p, ok := vars["period"]; ok {
+	// 	period = p
+	// }
+
+	start := "-P1D"
+	if s, ok := vars["start"]; ok {
+		start = s
+	}
+
+	end := "PT0H"
+	if e, ok := vars["end"]; ok {
+		end = e
+	}
+
 	cwService, ok := s.cloudwatchServices[account]
 	if !ok {
 		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
@@ -66,7 +103,8 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 	}
 	log.Debugf("found cost explorer result cache %+v", *resultCache)
 
-	hashedCacheKey := s.imageCache.HashedKey(Org + "/" + id + "/" + metric)
+	key := fmt.Sprintf("%s/%s/%s/%s/%s/%d", Org, id, metric, start, end, period)
+	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
 
@@ -80,7 +118,11 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	image, err := cwService.GetMetricWidget(r.Context(), metric, id)
+	metrics := []cloudwatch.Metric{
+		cloudwatch.Metric{"AWS/EC2", metric, "InstanceId", id},
+	}
+
+	image, err := cwService.GetMetricWidget(r.Context(), metrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)

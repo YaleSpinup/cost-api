@@ -37,7 +37,14 @@ func TestGetMetricWidget(t *testing.T) {
 		t.Errorf("expected nil error reading, got: %s", err)
 	}
 
-	out, err := c.GetMetricWidget(context.TODO(), "CPUUtilization", "i-abc12345")
+	metrics := []Metric{
+		Metric{"AWS/EC2", "CPUUtilization", "InstanceId", "i-abc12345"},
+	}
+	period := int64(300)
+	start := "-P1D"
+	end := "PT0H"
+
+	out, err := c.GetMetricWidget(context.TODO(), metrics, period, start, end)
 	if err != nil {
 		t.Errorf("expected nil error, got: %s", err)
 	}
@@ -46,8 +53,8 @@ func TestGetMetricWidget(t *testing.T) {
 		t.Error("didn't get expected image output from GetMetricWidget")
 	}
 
-	// test empty metric
-	_, err = c.GetMetricWidget(context.TODO(), "", "i-abc12345")
+	// test nil metric
+	_, err = c.GetMetricWidget(context.TODO(), nil, period, start, end)
 	if aerr, ok := err.(apierror.Error); ok {
 		if aerr.Code != apierror.ErrBadRequest {
 			t.Errorf("expected error code %s, got: %s", apierror.ErrBadRequest, aerr.Code)
@@ -56,8 +63,28 @@ func TestGetMetricWidget(t *testing.T) {
 		t.Errorf("expected apierror.Error, got: %s", reflect.TypeOf(err).String())
 	}
 
-	// test empty id
-	_, err = c.GetMetricWidget(context.TODO(), "CPUUtilization", "")
+	// test empty period
+	_, err = c.GetMetricWidget(context.TODO(), metrics, 0, start, end)
+	if aerr, ok := err.(apierror.Error); ok {
+		if aerr.Code != apierror.ErrBadRequest {
+			t.Errorf("expected error code %s, got: %s", apierror.ErrBadRequest, aerr.Code)
+		}
+	} else {
+		t.Errorf("expected apierror.Error, got: %s", reflect.TypeOf(err).String())
+	}
+
+	// test empty start
+	_, err = c.GetMetricWidget(context.TODO(), metrics, 300, "", end)
+	if aerr, ok := err.(apierror.Error); ok {
+		if aerr.Code != apierror.ErrBadRequest {
+			t.Errorf("expected error code %s, got: %s", apierror.ErrBadRequest, aerr.Code)
+		}
+	} else {
+		t.Errorf("expected apierror.Error, got: %s", reflect.TypeOf(err).String())
+	}
+
+	// test empty end
+	_, err = c.GetMetricWidget(context.TODO(), metrics, 300, start, "")
 	if aerr, ok := err.(apierror.Error); ok {
 		if aerr.Code != apierror.ErrBadRequest {
 			t.Errorf("expected error code %s, got: %s", apierror.ErrBadRequest, aerr.Code)

@@ -64,8 +64,8 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 
 	// get vars from the API route
 	account := vars["account"]
-	startTime := vars["StartTime"]
-	endTime := vars["EndTime"]
+	startTime := vars["start"]
+	endTime := vars["end"]
 	spaceID := vars["space"]
 
 	ceService, ok := s.costExplorerServices[account]
