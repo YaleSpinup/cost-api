@@ -46,6 +46,7 @@ func New(s3cache *common.S3Cache) *S3Cache {
 		return nil
 	}
 	s.Bucket = s3cache.Bucket
+	s.Prefix = s3cache.Prefix
 
 	sess := session.Must(session.NewSession(&config))
 	s.Service = s3.New(sess)
