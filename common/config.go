@@ -18,6 +18,7 @@ type Config struct {
 	Org             string
 	CacheExpireTime string
 	CachePurgeTime  string
+	ImageCache      *S3Cache
 }
 
 // Account is the configuration for an individual account
@@ -34,6 +35,23 @@ type Version struct {
 	VersionPrerelease string
 	BuildStamp        string
 	GitHash           string
+}
+
+type S3Cache struct {
+	Bucket       string
+	Endpoint     string
+	Region       string
+	Akid         string
+	Secret       string
+	Prefix       string
+	HashingToken string
+	AccessLog    *AccessLog
+}
+
+// AccessLog is the configuration for a bucket's access log
+type AccessLog struct {
+	Bucket string
+	Prefix string
 }
 
 // ReadConfig decodes the configuration from an io Reader

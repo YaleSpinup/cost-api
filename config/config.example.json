@@ -7,6 +7,14 @@
       "secret": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
     }
   },
+  "imageCache": {
+    "region": "us-east-1",
+    "bucket": "imagecache_s3_bucket",
+    "akid": "aaaaaaaaaaaaaaaaaaaa",
+    "secret": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+    "prefix": "costapi",
+    "hashingToken": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb"
+  },
   "token": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb",
   "logLevel": "debug",
   "org": "localdev",

@@ -12,6 +12,14 @@
       "secret": "{{ .spinupsec_secret }}"
     }
   },
+  "imageCache": {
+    "region": "us-east-1",
+    "bucket": "{{ .imagecache_bucket }}",
+    "prefix": "{{ .imagecache_bucket_prefix }}",
+    "akid": "{{ .imagecache_akid }}",
+    "secret": "{{ .imagecache_secret }}",
+    "hashingToken": "{{ .imagecache_hashing_token }}"
+  },
   "token": "{{ .api_token }}",
   "logLevel": "{{ .log_level }}",
   "org": "{{ .spinup_org }}",

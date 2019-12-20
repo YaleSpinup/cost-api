@@ -7,8 +7,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/YaleSpinup/cost-api/cloudwatch"
 	"github.com/YaleSpinup/cost-api/common"
 	"github.com/YaleSpinup/cost-api/costexplorer"
+	"github.com/YaleSpinup/cost-api/imagecache"
+	"github.com/YaleSpinup/cost-api/s3cache"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	cache "github.com/patrickmn/go-cache"
@@ -26,7 +29,9 @@ type server struct {
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
+	cloudwatchServices   map[string]cloudwatch.Cloudwatch
 	resultCache          map[string]*cache.Cache
+	imageCache           imagecache.ImageCache
 }
 
 // NewServer creates a new server and starts it
@@ -40,6 +45,7 @@ func NewServer(config common.Config) error {
 		version:              config.Version,
 		context:              ctx,
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
+		cloudwatchServices:   make(map[string]cloudwatch.Cloudwatch),
 		resultCache:          make(map[string]*cache.Cache),
 	}
 
@@ -77,8 +83,16 @@ func NewServer(config common.Config) error {
 		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
 
+		log.Debugf("creating new cloudwatch service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
+		s.cloudwatchServices[name] = cloudwatch.NewSession(c)
+
 		log.Debugf("creating new result cache for account '%s' with expire time: %s and purge time: %s", name, expireTime.String(), purgeTime.String())
 		s.resultCache[name] = cache.New(expireTime, purgeTime)
+	}
+
+	// configure s3 image cache if specified
+	if config.ImageCache != nil {
+		s.imageCache = s3cache.New(config.ImageCache)
 	}
 
 	publicURLs := map[string]string{
