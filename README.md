@@ -66,7 +66,7 @@ the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloud
 
 ```
 GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&....]
-GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start={StartTime}&end={EndTime}&period={Period}]
+GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
 ```
 
 #### Response
@@ -83,7 +83,7 @@ possible to pass the start time, end time and period (e. `300s` for 300 seconds,
 
 ```
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&....]
-GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start={StartTime}&end={EndTime}&period={Period}]
+GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
 ```
 
 #### Response
