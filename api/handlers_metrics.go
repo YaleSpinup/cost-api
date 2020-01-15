@@ -3,6 +3,8 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/YaleSpinup/cost-api/apierror"
@@ -15,17 +17,27 @@ import (
 func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-
-	// get vars from the API route
 	account := vars["account"]
-	metric := vars["metric"]
 	id := vars["id"]
 
+	queries := r.URL.Query()
+	metrics := queries["metric"]
+	if len(metrics) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one metric is required", nil))
+		return
+	}
+
 	period := int64(300)
-	// if p, ok := vars["period"]; ok {
-	// 	// TODO p is a string, need int64
-	// 	period = p
-	// }
+	if p, ok := vars["period"]; ok && p != "" {
+		dur, err := time.ParseDuration(p)
+		if err != nil {
+			msg := fmt.Sprintf("failed to parse period as duration: %s", err)
+			handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+			return
+		}
+
+		period = int64(dur.Seconds())
+	}
 
 	start := "-P1D"
 	if s, ok := vars["start"]; ok {
@@ -45,11 +57,12 @@ func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	log.Debugf("found cloudwatch service %+v", cwService)
 
-	metrics := []cloudwatch.Metric{
-		cloudwatch.Metric{"AWS/EC2", metric, "InstanceId", id},
+	cwMetrics := []cloudwatch.Metric{}
+	for _, m := range metrics {
+		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/EC2", m, "InstanceId", id})
 	}
 
-	out, err := cwService.GetMetricWidget(r.Context(), metrics, period, start, end)
+	out, err := cwService.GetMetricWidget(r.Context(), cwMetrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)
@@ -65,25 +78,36 @@ func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) 
 func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-
-	// get vars from the API route
 	account := vars["account"]
-	metric := vars["metric"]
 	id := vars["id"]
 
+	queries := r.URL.Query()
+	metrics := queries["metric"]
+	if len(metrics) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one metric is required", nil))
+		return
+	}
+	sort.Strings(metrics)
+
 	period := int64(300)
-	// 	// TODO p is a string, need int64
-	// if p, ok := vars["period"]; ok {
-	// 	period = p
-	// }
+	if p, ok := vars["period"]; ok && p != "" {
+		dur, err := time.ParseDuration(p)
+		if err != nil {
+			msg := fmt.Sprintf("failed to parse period as duration: %s", err)
+			handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+			return
+		}
+
+		period = int64(dur.Seconds())
+	}
 
 	start := "-P1D"
-	if s, ok := vars["start"]; ok {
+	if s, ok := vars["start"]; ok && s != "" {
 		start = s
 	}
 
 	end := "PT0H"
-	if e, ok := vars["end"]; ok {
+	if e, ok := vars["end"]; ok && e != "" {
 		end = e
 	}
 
@@ -103,7 +127,7 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 	}
 	log.Debugf("found cost explorer result cache %+v", *resultCache)
 
-	key := fmt.Sprintf("%s/%s/%s/%s/%s/%d", Org, id, metric, start, end, period)
+	key := fmt.Sprintf("%s/%s/%s/%s/%s/%d", Org, id, strings.Join(metrics, "-"), start, end, period)
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
@@ -118,11 +142,12 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	metrics := []cloudwatch.Metric{
-		cloudwatch.Metric{"AWS/EC2", metric, "InstanceId", id},
+	cwMetrics := []cloudwatch.Metric{}
+	for _, m := range metrics {
+		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/EC2", m, "InstanceId", id})
 	}
 
-	image, err := cwService.GetMetricWidget(r.Context(), metrics, period, start, end)
+	image, err := cwService.GetMetricWidget(r.Context(), cwMetrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)

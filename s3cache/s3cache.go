@@ -3,7 +3,7 @@ package s3cache
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -122,7 +122,7 @@ func (s *S3Cache) Save(ctx context.Context, key string, obj []byte) ([]byte, err
 }
 
 func (s *S3Cache) HashedKey(key string) string {
-	hasher := sha256.New()
+	hasher := sha512.New()
 	hasher.Write([]byte(s.HashingToken + key))
 	return base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
