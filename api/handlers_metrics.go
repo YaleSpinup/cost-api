@@ -62,6 +62,7 @@ func (s *server) MetricsGetImageHandler(w http.ResponseWriter, r *http.Request) 
 		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/EC2", m, "InstanceId", id})
 	}
 
+	log.Debugf("getting metrics %+v, start: %s, end: %s with period: %ds", cwMetrics, start, end, period)
 	out, err := cwService.GetMetricWidget(r.Context(), cwMetrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
@@ -147,6 +148,7 @@ func (s *server) MetricsGetImageUrlHandler(w http.ResponseWriter, r *http.Reques
 		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/EC2", m, "InstanceId", id})
 	}
 
+	log.Debugf("getting metrics %+v, start: %s, end: %s with period: %ds", cwMetrics, start, end, period)
 	image, err := cwService.GetMetricWidget(r.Context(), cwMetrics, period, start, end)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
