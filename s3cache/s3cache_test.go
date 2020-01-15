@@ -139,7 +139,7 @@ func TestHashedKey(t *testing.T) {
 		HashingToken: "test",
 	}
 
-	expected := "FL4euODSAlXXPEEekKy-YwsT6bnkP6rVJJg0FTEc07c="
+	expected := "qQVlsJ7_Mcl2eKR0hoAI09EgJGWXSgxcfjs2oa6i6c5zWOUDo3rTO372uds1dZMFYDrJJR6uaFuy1e-D0KSGLg=="
 	out := c.HashedKey("somekey")
 	if out != expected {
 		t.Errorf("expected %s, got %s", expected, out)
