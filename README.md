@@ -1,6 +1,6 @@
 # cost-api
 
-This API provides simple restful API access to Amazon's Cost explorer service.
+This API provides simple restful API access to Amazon's Cost explorer and cloudwatch metrics service.
 
 ## Endpoints
 
@@ -11,8 +11,8 @@ GET /v1/cost/metrics
 
 GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30]
 
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}.png[?start=-P1D&end=PT0H&period=300]
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}[?start=-P1D&end=PT0H&period=300]
+GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
 ## Usage
@@ -23,26 +23,51 @@ By default, this will get the month to date costs for a space id (based on the `
 
 #### Request
 
+```
 GET /v1/cost/{account}/spaces/{spaceid}
+```
 
 #### Response
 
 ```json
-{
-    "TBD"
-}
+[
+    {
+        "Estimated": true,
+        "Groups": [],
+        "TimePeriod": {
+            "End": "2020-01-15",
+            "Start": "2020-01-01"
+        },
+        "Total": {
+            "BlendedCost": {
+                "Amount": "0",
+                "Unit": "USD"
+            },
+            "UnblendedCost": {
+                "Amount": "0",
+                "Unit": "USD"
+            },
+            "UsageQuantity": {
+                "Amount": "0",
+                "Unit": "N/A"
+            }
+        }
+    }
+]
 ```
 
 ### Get cloudwatch metrics widgets for an instance ID
 
-This will get the passed metric for the passed instance ID in a `image/png` graph for the past 1 day by default. It's also
-possible to pass the start time, end time and period (in seconds).  Query parameters must follow
+This will get the passed metric(s) for the passed instance ID in a `image/png` graph for the past 1 day by default. It's also
+possible to pass the start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
 the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
 
 #### Request
 
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}.png
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}.png?start={StartTime}&end={EndTime}&period={Period}
+```
+GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&....]
+GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
+```
 
 #### Response
 
@@ -50,25 +75,32 @@ GET /v1/cost/{account}/instances/{id}/metrics/{metric}.png?start={StartTime}&end
 
 ### Get cloudwatch metrics widgets URL from S3 for an instance ID
 
-This will get the passed metric for the passed instance ID in a `image/png` graph for the past 1 day by default, cache it in S3
+This will get the passed metric(s) for the passed instance ID in a `image/png` graph for the past 1 day by default, cache it in S3
 and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
-possible to pass the start time, end time and period (in seconds).  Query parameters must follow the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
+possible to pass the start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
 
 #### Request
 
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}
-GET /v1/cost/{account}/instances/{id}/metrics/{metric}?start={StartTime}&end={EndTime}&period={Period}
+```
+GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&....]
+GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
+```
 
 #### Response
 
 ```json
 {
-    "ImageURL": "https://s3.amazonaws.com/sometestbucket/abc123_kLbi1SNQlKqMOmpaaJHAQZ3a-acutp5-tc6J0="
+    "ImageURL": "https://s3.amazonaws.com/sometestbucket/aabbccddeeff-Y3_yCKckBrkUNt3Lh4LzXBFeLXBY5IP1oUED4hyY0cdKneYelKv-xlV7K2F_d0ccwp677A=="
 }
 ```
 
-## Caching
-Caching data (using go-cache) from AWS Cost Explorer configurable via config.json: CacheExpireTime and CachePurgeTime.  The cache can also be purged via daemon restart. 
+## Image Caching
+
+When image urls are returned for metrics graph data, they are cached in the image cache.  The default implementation of this cache is an S3 bucket where the URLs are returned in the response (and cached in the data cache).
+
+## Data Caching
+
+AWS Cost Explorer data and metrics graph image url is cached (using go-cache).  The cache TTLs are configurable via config.json: CacheExpireTime and CachePurgeTime.  The cache can also be purged via daemon restart.
 
 ## Authentication
 

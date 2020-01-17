@@ -78,7 +78,7 @@ func NewServer(config common.Config) error {
 		return err
 	}
 
-	// Create a shared Cost Explorer session
+	// Create shared cost explorer sessions, cloudwatch sessions, and go-cache instances per account defined in the config
 	for name, c := range config.Accounts {
 		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
@@ -90,7 +90,7 @@ func NewServer(config common.Config) error {
 		s.resultCache[name] = cache.New(expireTime, purgeTime)
 	}
 
-	// configure s3 image cache if specified
+	// if specified, configure s3 image cache
 	if config.ImageCache != nil {
 		s.imageCache = s3cache.New(config.ImageCache)
 	}
