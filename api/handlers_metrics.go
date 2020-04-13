@@ -48,7 +48,7 @@ func (s *server) GetEC2MetricsImageHandler(w http.ResponseWriter, r *http.Reques
 	req["metrics"] = cwMetrics
 
 	log.Debugf("getting metrics  with request %+v", req)
-	out, err := cwService.GetInstanceMetricWidget(r.Context(), req)
+	out, err := cwService.GetMetricWidget(r.Context(), req)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)
@@ -118,7 +118,7 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	req["metrics"] = cwMetrics
 
 	log.Debugf("getting metrics with request %+v", req)
-	image, err := cwService.GetInstanceMetricWidget(r.Context(), req)
+	image, err := cwService.GetMetricWidget(r.Context(), req)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)
@@ -174,7 +174,7 @@ func (s *server) GetECSMetricsImageHandler(w http.ResponseWriter, r *http.Reques
 	req["metrics"] = cwMetrics
 
 	log.Debugf("getting metrics with request %+v", req)
-	out, err := cwService.GetInstanceMetricWidget(r.Context(), req)
+	out, err := cwService.GetMetricWidget(r.Context(), req)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)
@@ -246,7 +246,7 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	req["metrics"] = cwMetrics
 
 	log.Debugf("getting metrics with request %+v", req)
-	image, err := cwService.GetInstanceMetricWidget(r.Context(), req)
+	image, err := cwService.GetMetricWidget(r.Context(), req)
 	if err != nil {
 		log.Errorf("failed getting metrics widget image: %s", err)
 		handleError(w, err)

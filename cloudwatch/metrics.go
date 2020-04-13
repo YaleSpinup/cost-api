@@ -29,7 +29,7 @@ type MetricsRequest map[string]interface{}
 //   "start": "-P1D",
 //   "end": "PT0H"
 // }
-func (c *Cloudwatch) GetInstanceMetricWidget(ctx context.Context, req MetricsRequest) ([]byte, error) {
+func (c *Cloudwatch) GetMetricWidget(ctx context.Context, req MetricsRequest) ([]byte, error) {
 	if req == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
