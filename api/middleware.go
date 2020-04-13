@@ -48,3 +48,11 @@ func TokenMiddleware(psk string, public map[string]string, h http.Handler) http.
 		h.ServeHTTP(w, r)
 	})
 }
+
+func ParamMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("processing params middleware")
+		log.Infof("done processing params middleware for URL '%s'", r.URL)
+		h.ServeHTTP(w, r)
+	})
+}

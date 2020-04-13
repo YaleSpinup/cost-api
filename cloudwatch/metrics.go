@@ -12,39 +12,41 @@ import (
 )
 
 type Metric []string
+type MetricsRequest map[string]interface{}
 
 // GetMetricWidget gets a metric widget image for an instance id
-func (c *Cloudwatch) GetMetricWidget(ctx context.Context, metrics []Metric, period int64, start, end string) ([]byte, error) {
-	if len(metrics) == 0 || period == 0 || start == "" || end == "" {
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
+// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
+//
+// Example metrics request
+// {
+//   "metrics": [
+//     [ "AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc" ]
+//   ],
+//   "stat": "Average"
+//   "period": 300,
+//   "start": "-P1D",
+//   "end": "PT0H"
+// }
+func (c *Cloudwatch) GetInstanceMetricWidget(ctx context.Context, req MetricsRequest) ([]byte, error) {
+	if req == nil {
 		return nil, apierror.New(apierror.ErrBadRequest, "invalid input", nil)
 	}
 
-	log.Infof("getting metric widget for metics '%+v' with period %d, start %s and end %s", metrics, period, start, end)
-
-	// default to last day of metrics for one instance id
-	req := struct {
-		Metrics []Metric `json:"metrics"`
-		Period  int64    `json:"period"`
-		Start   string   `json:"start"`
-		End     string   `json:"end"`
-	}{
-		Metrics: metrics,
-		Period:  period,
-		Start:   start,
-		End:     end,
-	}
+	log.Infof("getting metric widget with input request %+v", req)
 
 	j, err := json.Marshal(req)
 	if err != nil {
-		msg := fmt.Sprintf("failed to get build widget request input for metrics '%+v' with period %d, start %s and end %s: %s", metrics, period, start, end, err)
+		msg := fmt.Sprintf("failed to build widget request input for metrics from '%+v': %s", req, err)
 		return nil, ErrCode(msg, err)
 	}
 
-	log.Debugf("getting metric widget with input request %s", string(j))
+	log.Debugf("getting metric widget with input json %s", string(j))
 
 	out, err := c.Service.GetMetricWidgetImageWithContext(ctx, &cloudwatch.GetMetricWidgetImageInput{MetricWidget: aws.String(string(j))})
 	if err != nil {
-		msg := fmt.Sprintf("failed to get metric widget image for metrics '%+v' with period %d, start %s and end %s: %s", metrics, period, start, end, err)
+		msg := fmt.Sprintf("failed to get metric widget from request '%+s': %s", string(j), err)
 		return nil, ErrCode(msg, err)
 	}
 
