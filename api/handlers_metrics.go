@@ -13,53 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetEC2MetricsImageHandler gets metrics from cloudwatch
-func (s *server) GetEC2MetricsImageHandler(w http.ResponseWriter, r *http.Request) {
-	w = LogWriter{w}
-	vars := mux.Vars(r)
-	account := vars["account"]
-	instanceId := vars["id"]
-
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
-		return
-	}
-	log.Debugf("found cloudwatch service %+v", cwService)
-
-	queries := r.URL.Query()
-	metrics := queries["metric"]
-	if len(metrics) == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one metric is required", nil))
-		return
-	}
-
-	req := cloudwatch.MetricsRequest{}
-	if err := parseQuery(r, req); err != nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "failed to parse query", err))
-		return
-	}
-
-	cwMetrics := []cloudwatch.Metric{}
-	for _, m := range metrics {
-		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/EC2", m, "InstanceId", instanceId})
-	}
-	req["metrics"] = cwMetrics
-
-	log.Debugf("getting metrics  with request %+v", req)
-	out, err := cwService.GetMetricWidget(r.Context(), req)
-	if err != nil {
-		log.Errorf("failed getting metrics widget image: %s", err)
-		handleError(w, err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "image/png")
-	w.WriteHeader(http.StatusOK)
-	w.Write(out)
-}
-
 // GetEC2MetricsURLHandler gets metrics from cloudwatch and returns a link to the image
 func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
@@ -138,54 +91,6 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(meta)
 }
 
-// GetECSMetricsImageHandler gets metrics from cloudwatch
-func (s *server) GetECSMetricsImageHandler(w http.ResponseWriter, r *http.Request) {
-	w = LogWriter{w}
-	vars := mux.Vars(r)
-	account := vars["account"]
-	cluster := vars["cluster"]
-	service := vars["service"]
-
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
-		return
-	}
-	log.Debugf("found cloudwatch service %+v", cwService)
-
-	queries := r.URL.Query()
-	metrics := queries["metric"]
-	if len(metrics) == 0 {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one metric is required", nil))
-		return
-	}
-
-	req := cloudwatch.MetricsRequest{}
-	if err := parseQuery(r, req); err != nil {
-		handleError(w, apierror.New(apierror.ErrBadRequest, "failed to parse query", err))
-		return
-	}
-
-	cwMetrics := []cloudwatch.Metric{}
-	for _, m := range metrics {
-		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/ECS", m, "ClusterName", cluster, "ServiceName", service})
-	}
-	req["metrics"] = cwMetrics
-
-	log.Debugf("getting metrics with request %+v", req)
-	out, err := cwService.GetMetricWidget(r.Context(), req)
-	if err != nil {
-		log.Errorf("failed getting metrics widget image: %s", err)
-		handleError(w, err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "image/png")
-	w.WriteHeader(http.StatusOK)
-	w.Write(out)
-}
-
 // GetECSMetricsURLHandler gets metrics from cloudwatch and returns a link to the image
 func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
@@ -242,7 +147,6 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	for _, m := range metrics {
 		cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/ECS", m, "ClusterName", cluster, "ServiceName", service})
 	}
-	// req.Metrics = cwMetrics
 	req["metrics"] = cwMetrics
 
 	log.Debugf("getting metrics with request %+v", req)
@@ -298,7 +202,6 @@ func parseQuery(r *http.Request, request cloudwatch.MetricsRequest) error {
 	if e, ok := queries["end"]; ok {
 		end = e[0]
 	}
-
 	request["end"] = end
 
 	return nil
