@@ -13,6 +13,9 @@ GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30]
 
 GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+
+GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
 ## Usage
@@ -56,34 +59,21 @@ GET /v1/cost/{account}/spaces/{spaceid}
 ]
 ```
 
-### Get cloudwatch metrics widgets for an instance ID
+### Get cloudwatch metrics widgets URL from S3 for an instance ID
 
-This will get the passed metric(s) for the passed instance ID in a `image/png` graph for the past 1 day by default. It's also
+This will get the passed metric(s) for the passed instance ID or container cluster/service in a `image/png` graph for the past 1 day by default, cache it in S3
+and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
 possible to pass the start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
 the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
 
 #### Request
 
 ```
-GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&....]
-GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
-```
+GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&....]
+GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
 
-#### Response
-
-![WidgetExample](/img/example_response.png?raw=true)
-
-### Get cloudwatch metrics widgets URL from S3 for an instance ID
-
-This will get the passed metric(s) for the passed instance ID in a `image/png` graph for the past 1 day by default, cache it in S3
-and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
-possible to pass the start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
-
-#### Request
-
-```
-GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&....]
-GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
+GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&....]
+GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
 ```
 
 #### Response
@@ -93,6 +83,10 @@ GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={me
     "ImageURL": "https://s3.amazonaws.com/sometestbucket/aabbccddeeff-Y3_yCKckBrkUNt3Lh4LzXBFeLXBY5IP1oUED4hyY0cdKneYelKv-xlV7K2F_d0ccwp677A=="
 }
 ```
+
+with an image like this
+
+![WidgetExample](/img/example_response.png?raw=true)
 
 ## Image Caching
 

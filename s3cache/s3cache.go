@@ -94,7 +94,7 @@ func (s *S3Cache) GetMetadata(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (s *S3Cache) Save(ctx context.Context, key string, obj []byte) ([]byte, error) {
-	log.Infof("savinvg object %s to cache", key)
+	log.Infof("saving object %s to cache", key)
 
 	if s.Prefix != "" {
 		key = s.Prefix + "/" + key
