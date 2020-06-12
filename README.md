@@ -16,7 +16,10 @@ GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={me
 
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+<<<<<<< HEAD
 GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberOfObjects}
+=======
+>>>>>>> updated RDS route to rds
 GET /v1/metrics/{account}/rds/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
@@ -70,27 +73,28 @@ the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloud
 
 ### Documentation on cloudwatch metrics
 
+```
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
 
 Get you a list of metrics per AWS service
 $ aws --region us-east-1 cloudwatch list-metrics --namespace AWS/RDS |grep MetricName |sort| uniq
 
-// GetMetricWidget gets a metric widget image for an instance id
-// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
-// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
-// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
-//
-// Example metrics request
-// {
-//   "metrics": [
-//     [ "AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc" ]
-//   ],
-//   "stat": "Average"
-//   "period": 300,
-//   "start": "-P1D",
-//   "end": "PT0H"
-// }
+GetMetricWidget gets a metric widget image for an instance id
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
 
+Example metrics request
+{
+  "metrics": [
+    [ "AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc" ]
+  ],
+  "stat": "Average"
+  "period": 300,
+  "start": "-P1D",
+  "end": "PT0H"
+}
+```
 
 #### Request
 
