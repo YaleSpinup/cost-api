@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -49,7 +50,7 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%v/%v/%v", Org, instanceId, strings.Join(metrics, "-"), req["start"], req["end"], req["period"])
+	key := fmt.Sprintf("%s/%s/%s%s", Org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
@@ -128,7 +129,9 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%v/%v/%v", Org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req["start"], req["end"], req["period"])
+	key := fmt.Sprintf("%s/%s/%s%s", Org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req.String())
+	log.Debugf("object key: %s", key)
+
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
@@ -204,6 +207,36 @@ func parseQuery(r *http.Request, request cloudwatch.MetricsRequest) error {
 	}
 	request["end"] = end
 
+	height := int64(400)
+	if h, ok := queries["height"]; ok {
+		hint, err := strconv.ParseInt(h[0], 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse height as int")
+		}
+
+		if hint > int64(2000) {
+			return fmt.Errorf("%d is greater than maximum height, 2000", hint)
+		}
+
+		height = hint
+	}
+	request["height"] = height
+
+	width := int64(600)
+	if w, ok := queries["width"]; ok {
+		wint, err := strconv.ParseInt(w[0], 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse width as int")
+		}
+
+		if wint > int64(2000) {
+			return fmt.Errorf("%d is greater than maximum width, 2000", wint)
+		}
+
+		width = wint
+	}
+	request["width"] = width
+
 	return nil
 }
 
@@ -254,7 +287,9 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%v/%v/%v", Org, bucketName, metric, req["start"], req["end"], req["period"])
+	key := fmt.Sprintf("%s/%s/%s%s", Org, bucketName, metric, req.String())
+	log.Debugf("object key: %s", key)
+
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)

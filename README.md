@@ -64,7 +64,7 @@ GET /v1/cost/{account}/spaces/{spaceid}
 
 This will get the passed metric(s) for the passed instance ID or container cluster/service in a `image/png` graph for the past 1 day by default, cache it in S3
 and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
-possible to pass the start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
+possible to pass the height, width, start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
 the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
 
 #### Request
