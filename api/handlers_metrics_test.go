@@ -134,19 +134,39 @@ func TestParseQuery(t *testing.T) {
 			err:   errors.New("failed to parse period as duration: time: invalid duration true"),
 		},
 		{
+			query: "height=-100",
+			input: cloudwatch.MetricsRequest{},
+			err:   errors.New("invalid height -100, value must be >=1 and <= 2000"),
+		},
+		{
+			query: "height=0",
+			input: cloudwatch.MetricsRequest{},
+			err:   errors.New("invalid height 0, value must be >=1 and <= 2000"),
+		},
+		{
 			query: "height=2001",
 			input: cloudwatch.MetricsRequest{},
-			err:   errors.New("2001 is greater than maximum height, 2000"),
+			err:   errors.New("invalid height 2001, value must be >=1 and <= 2000"),
+		},
+		{
+			query: "width=-100",
+			input: cloudwatch.MetricsRequest{},
+			err:   errors.New("invalid width -100, value must be >=1 and <= 2000"),
+		},
+		{
+			query: "width=0",
+			input: cloudwatch.MetricsRequest{},
+			err:   errors.New("invalid width 0, value must be >=1 and <= 2000"),
 		},
 		{
 			query: "width=2001",
 			input: cloudwatch.MetricsRequest{},
-			err:   errors.New("2001 is greater than maximum width, 2000"),
+			err:   errors.New("invalid width 2001, value must be >=1 and <= 2000"),
 		},
 		{
 			query: "height=2001&width=2001",
 			input: cloudwatch.MetricsRequest{},
-			err:   errors.New("2001 is greater than maximum height, 2000"),
+			err:   errors.New("invalid height 2001, value must be >=1 and <= 2000"),
 		},
 	}
 

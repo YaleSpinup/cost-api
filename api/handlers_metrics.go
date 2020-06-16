@@ -173,73 +173,6 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(meta)
 }
 
-func parseQuery(r *http.Request, request cloudwatch.MetricsRequest) error {
-	log.SetLevel(log.DebugLevel)
-	queries := r.URL.Query()
-	log.Debugf("parsing queries: %+v", queries)
-
-	stat := "Average"
-	if s, ok := queries["stat"]; ok {
-		stat = s[0]
-	}
-	request["stat"] = stat
-
-	period := int64(300)
-	if p, ok := queries["period"]; ok && p[0] != "" {
-		dur, err := time.ParseDuration(p[0])
-		if err != nil {
-			return errors.Wrap(err, "failed to parse period as duration")
-		}
-
-		period = int64(dur.Seconds())
-	}
-	request["period"] = period
-
-	start := "-P1D"
-	if s, ok := queries["start"]; ok {
-		start = s[0]
-	}
-	request["start"] = start
-
-	end := "PT0H"
-	if e, ok := queries["end"]; ok {
-		end = e[0]
-	}
-	request["end"] = end
-
-	height := int64(400)
-	if h, ok := queries["height"]; ok {
-		hint, err := strconv.ParseInt(h[0], 10, 64)
-		if err != nil {
-			return errors.Wrap(err, "failed to parse height as int")
-		}
-
-		if hint > int64(2000) {
-			return fmt.Errorf("%d is greater than maximum height, 2000", hint)
-		}
-
-		height = hint
-	}
-	request["height"] = height
-
-	width := int64(600)
-	if w, ok := queries["width"]; ok {
-		wint, err := strconv.ParseInt(w[0], 10, 64)
-		if err != nil {
-			return errors.Wrap(err, "failed to parse width as int")
-		}
-
-		if wint > int64(2000) {
-			return fmt.Errorf("%d is greater than maximum width, 2000", wint)
-		}
-
-		width = wint
-	}
-	request["width"] = width
-
-	return nil
-}
-
 // GetS3MetricsURLHandler gets metrics from cloudwatch and returns a link to the image
 func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
@@ -323,4 +256,71 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(meta)
+}
+
+func parseQuery(r *http.Request, request cloudwatch.MetricsRequest) error {
+	log.SetLevel(log.DebugLevel)
+	queries := r.URL.Query()
+	log.Debugf("parsing queries: %+v", queries)
+
+	stat := "Average"
+	if s, ok := queries["stat"]; ok {
+		stat = s[0]
+	}
+	request["stat"] = stat
+
+	period := int64(300)
+	if p, ok := queries["period"]; ok && p[0] != "" {
+		dur, err := time.ParseDuration(p[0])
+		if err != nil {
+			return errors.Wrap(err, "failed to parse period as duration")
+		}
+
+		period = int64(dur.Seconds())
+	}
+	request["period"] = period
+
+	start := "-P1D"
+	if s, ok := queries["start"]; ok {
+		start = s[0]
+	}
+	request["start"] = start
+
+	end := "PT0H"
+	if e, ok := queries["end"]; ok {
+		end = e[0]
+	}
+	request["end"] = end
+
+	height := int64(400)
+	if h, ok := queries["height"]; ok {
+		hint, err := strconv.ParseInt(h[0], 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse height as int")
+		}
+
+		if hint < int64(1) || hint > int64(2000) {
+			return fmt.Errorf("invalid height %d, value must be >=1 and <= 2000", hint)
+		}
+
+		height = hint
+	}
+	request["height"] = height
+
+	width := int64(600)
+	if w, ok := queries["width"]; ok {
+		wint, err := strconv.ParseInt(w[0], 10, 64)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse width as int")
+		}
+
+		if wint < int64(1) || wint > int64(2000) {
+			return fmt.Errorf("invalid width %d, value must be >=1 and <= 2000", wint)
+		}
+
+		width = wint
+	}
+	request["width"] = width
+
+	return nil
 }
