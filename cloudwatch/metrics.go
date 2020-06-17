@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/YaleSpinup/cost-api/apierror"
 	"github.com/aws/aws-sdk-go/aws"
@@ -51,4 +52,25 @@ func (c *Cloudwatch) GetMetricWidget(ctx context.Context, req MetricsRequest) ([
 	}
 
 	return out.MetricWidgetImage, nil
+}
+
+func (m *MetricsRequest) String() string {
+	var s string
+	if m == nil {
+		return s
+	}
+
+	req := map[string]interface{}(*m)
+
+	keys := make([]string, 0, len(req))
+	for k := range req {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		s += fmt.Sprintf("/%s:%v", k, req[k])
+	}
+
+	return s
 }

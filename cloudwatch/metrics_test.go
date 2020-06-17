@@ -65,3 +65,123 @@ func TestGetMetricWidget(t *testing.T) {
 		t.Errorf("expected apierror.Error, got: %s", reflect.TypeOf(err).String())
 	}
 }
+
+func TestMetricRequestString(t *testing.T) {
+	type metricRequestString struct {
+		input  *MetricsRequest
+		output string
+	}
+
+	tests := []metricRequestString{
+		{
+			output: "",
+			input:  nil,
+		},
+		{
+			output: "/end:PT0H/height:400/period:300/start:-P1D/stat:Average/width:600",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "PT0H",
+				"period": int64(300),
+				"stat":   "Average",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:400/period:10/start:-PT1H/stat:Maximum/width:600",
+			input: &MetricsRequest{
+				"start":  "-PT1H",
+				"end":    "PT0H",
+				"period": int64(10),
+				"stat":   "Maximum",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:400/period:300/start:-PT1H/stat:Average/width:600",
+			input: &MetricsRequest{
+				"start":  "-PT1H",
+				"end":    "PT0H",
+				"period": int64(300),
+				"stat":   "Average",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:-PT1H/height:400/period:300/start:-P1D/stat:Average/width:600",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "-PT1H",
+				"period": int64(300),
+				"stat":   "Average",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:400/period:10/start:-P1D/stat:Average/width:600",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "PT0H",
+				"period": int64(10),
+				"stat":   "Average",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:400/period:300/start:-P1D/stat:Minimum/width:600",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "PT0H",
+				"period": int64(300),
+				"stat":   "Minimum",
+				"height": int64(400),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:100/period:300/start:-P1D/stat:Average/width:600",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "PT0H",
+				"period": int64(300),
+				"stat":   "Average",
+				"height": int64(100),
+				"width":  int64(600),
+			},
+		},
+		{
+			output: "/end:PT0H/height:400/period:300/start:-P1D/stat:Average/width:200",
+			input: &MetricsRequest{
+				"start":  "-P1D",
+				"end":    "PT0H",
+				"period": int64(300),
+				"stat":   "Average",
+				"height": int64(400),
+				"width":  int64(200),
+			},
+		},
+		{
+			output: "/end:PT0H/height:2000/metrics:[AWS/ECS CPUUtilization ClusterName spinup-000393 ServiceName spinup-0010a3-testsvc]/period:300/start:-P1D/stat:Average/width:2000",
+			input: &MetricsRequest{
+				"start":   "-P1D",
+				"end":     "PT0H",
+				"period":  int64(300),
+				"stat":    "Average",
+				"height":  int64(2000),
+				"width":   int64(2000),
+				"metrics": []string{"AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		if out := test.input.String(); out != test.output {
+			t.Errorf("expected '%s', got '%s'", test.output, out)
+		}
+	}
+}
