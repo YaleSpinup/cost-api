@@ -16,11 +16,9 @@ GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={me
 
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
-<<<<<<< HEAD
 GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberOfObjects}
-=======
->>>>>>> updated RDS route to rds
 GET /v1/metrics/{account}/rds/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+GET /v1/metrics/{account}/aurora/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
 ## Usage
@@ -83,6 +81,7 @@ GetMetricWidget gets a metric widget image for an instance id
 https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
 https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
+https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/MonitoringOverview.html
 
 Example metrics request
 {

@@ -37,4 +37,6 @@ func (s *server) routes() {
 	metricsApi.HandleFunc("/{account}/buckets/{bucket}/graph", s.GetS3MetricsURLHandler).Queries("metric", "{metric:(?:BucketSizeBytes|NumberOfObjects)}").Methods(http.MethodGet)
 	// metrics endpoints for RDS services
 	metricsApi.HandleFunc("/{account}/rds/{id}/graph", s.GetRDSMetricsURLHandler).Methods(http.MethodGet)
+	// metrics endpoints for RDS/Aurora services
+	metricsApi.HandleFunc("/{account}/aurora/{id}/graph", s.GetAuroraMetricsURLHandler).Methods(http.MethodGet)
 }
