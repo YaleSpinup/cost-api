@@ -319,7 +319,7 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		case "cluster":
 			cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/RDS", m, "DBClusterIdentifier", instanceId})
 		default:
-			msg := fmt.Sprintf("invalid metric requested: %s", m)
+			msg := fmt.Sprintf("invalid type requested: %s", m)
 			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
 			return
 		}
