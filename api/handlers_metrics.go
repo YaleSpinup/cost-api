@@ -296,7 +296,7 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%v/%v/%v%s", Org, instanceId, strings.Join(metrics, "-"), req["start"], req["end"], req["period"], req.String())
+	key := fmt.Sprintf("%s/%s/%s/%v/%v/%v%s", Org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
