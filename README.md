@@ -17,6 +17,7 @@ GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={me
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberOfObjects}
+GET /v1/metrics/{account}/rds/{type}/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
 ## Usage
@@ -66,6 +67,32 @@ This will get the passed metric(s) for the passed instance ID or container clust
 and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
 possible to pass the height, width, start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
 the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
+
+### Documentation on cloudwatch metrics
+
+```
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
+
+Get you a list of metrics per AWS service
+$ aws --region us-east-1 cloudwatch list-metrics --namespace AWS/RDS |grep MetricName |sort| uniq
+
+GetMetricWidget gets a metric widget image for an instance id
+https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
+https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
+https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/MonitoringOverview.html
+
+Example metrics request
+{
+  "metrics": [
+    [ "AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc" ]
+  ],
+  "stat": "Average"
+  "period": 300,
+  "start": "-P1D",
+  "end": "PT0H"
+}
+```
 
 #### Request
 
