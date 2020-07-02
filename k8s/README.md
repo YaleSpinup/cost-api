@@ -33,7 +33,7 @@ kubectl apply -f https://gist.githubusercontent.com/fishnix/a94dd54ec72523024f5a
 
 * run `skaffold dev` in the root of the project
 
-* update your `hosts` file to point spindev.internal.yale.yale.edu to localhost
+* update your `hosts` file to point spindev.internal.yale.edu to localhost
 
 * use the endpoint `http://<<spindev.internal.yale.edu>>/v1/cost`
 
