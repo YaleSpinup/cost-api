@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 	
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
