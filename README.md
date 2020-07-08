@@ -126,7 +126,7 @@ AWS Cost Explorer data and metrics graph image url is cached (using go-cache).  
 
 ## Authentication
 
-Authentication is accomplished via a pre-shared key.  This is done via the `X-Auth-Token` header.
+Authentication is accomplished via a pre-shared key (hashed string).  This is done via the `X-Auth-Token` header.
 
 ## Author
 
