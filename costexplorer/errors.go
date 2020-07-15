@@ -1,7 +1,7 @@
 package costexplorer
 
 import (
-	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	"github.com/pkg/errors"

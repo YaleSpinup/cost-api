@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	log "github.com/sirupsen/logrus"
 )

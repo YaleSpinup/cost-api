@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/cost-api/common"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
