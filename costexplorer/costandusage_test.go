@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/costexplorer"

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/YaleSpinup/cost-api/apierror"
+	"github.com/YaleSpinup/apierror"
 	"github.com/YaleSpinup/cost-api/cloudwatch"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
