@@ -2,8 +2,13 @@ package api
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/service/costexplorer"
 )
 
 func TestGetTimeDefault(t *testing.T) {
@@ -31,8 +36,8 @@ func TestGetTimeDefault(t *testing.T) {
 	}
 
 	// negative tests for non-matching defaults from getTimeDefault
-	sTime = fmt.Sprint("2006-01-02")
-	eTime = fmt.Sprint("2006-13-40")
+	sTime = "2006-01-02"
+	eTime = "2006-13-40"
 
 	if startTime != sTime {
 		t.Logf("negative test sTime: %s does not match: %s", sTime, startTime)
@@ -64,8 +69,8 @@ func TestGetTimeAPI(t *testing.T) {
 
 	// negative tests for non-matching API inputs from getTimeDefault
 	// bad start time fails
-	sTime := fmt.Sprint("2006-01-022")
-	eTime := fmt.Sprint("2006-12-02")
+	sTime := "2006-01-022"
+	eTime := "2006-12-02"
 
 	neg00startResult, neg00endResult, err := getTimeAPI(sTime, eTime)
 	if err != nil {
@@ -79,8 +84,8 @@ func TestGetTimeAPI(t *testing.T) {
 	}
 
 	// bad end time fails
-	sTime = fmt.Sprint("2006-01-02")
-	eTime = fmt.Sprint("2006-12-403")
+	sTime = "2006-01-02"
+	eTime = "2006-12-403"
 
 	neg01startResult, neg01endResult, err := getTimeAPI(sTime, eTime)
 	if err != nil {
@@ -94,8 +99,8 @@ func TestGetTimeAPI(t *testing.T) {
 	}
 
 	// start after end fails
-	sTime = fmt.Sprint("2006-01-30")
-	eTime = fmt.Sprint("2006-01-01")
+	sTime = "2006-01-30"
+	eTime = "2006-01-01"
 
 	neg02startResult, neg02endResult, err := getTimeAPI(sTime, eTime)
 	if err != nil {
@@ -106,5 +111,94 @@ func TestGetTimeAPI(t *testing.T) {
 	}
 	if neg02endResult == endTime {
 		t.Logf("negative test got expected neg02endResult from getTimeAPI: %s", neg02endResult)
+	}
+}
+
+func TestInSpace(t *testing.T) {
+	spaceIDS := []string{
+		"somespace-00012345",
+		"yourspace-00012345",
+	}
+
+	for _, sid := range spaceIDS {
+		expected := &costexplorer.Expression{
+			Tags: &costexplorer.TagValues{
+				Key: aws.String("spinup:spaceid"),
+				Values: []*string{
+					aws.String(sid),
+				},
+			},
+		}
+		out := inSpace(sid)
+		if !awsutil.DeepEqual(expected, out) {
+			t.Errorf("expected %s, got %s", awsutil.Prettify(expected), awsutil.Prettify(out))
+		}
+
+	}
+}
+
+func TestInOrg(t *testing.T) {
+	orgs := []string{
+		"ss",
+		"sstst",
+		"cool",
+		"yourorg",
+	}
+
+	for _, o := range orgs {
+		expected := &costexplorer.Expression{
+			Or: []*costexplorer.Expression{
+				{
+					Tags: &costexplorer.TagValues{
+						Key: aws.String("yale:org"),
+						Values: []*string{
+							aws.String(o),
+						},
+					},
+				},
+				{
+					Tags: &costexplorer.TagValues{
+						Key: aws.String("spinup:org"),
+						Values: []*string{
+							aws.String(o),
+						},
+					},
+				},
+			},
+		}
+		out := inOrg(o)
+		if !awsutil.DeepEqual(expected, out) {
+			t.Errorf("expected %s, got %s", awsutil.Prettify(expected), awsutil.Prettify(out))
+		}
+
+	}
+}
+
+func TestNotTryIT(t *testing.T) {
+	expected := &costexplorer.Expression{
+		Not: &costexplorer.Expression{
+			Or: []*costexplorer.Expression{
+				{
+					Tags: &costexplorer.TagValues{
+						Key: aws.String("yale:subsidized"),
+						Values: []*string{
+							aws.String("true"),
+						},
+					},
+				},
+				{
+					Tags: &costexplorer.TagValues{
+						Key: aws.String("spinup:subsidized"),
+						Values: []*string{
+							aws.String("true"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if out := notTryIT(); !reflect.DeepEqual(expected, out) {
+		t.Errorf("expected %s, got %s", awsutil.Prettify(expected), awsutil.Prettify(out))
 	}
 }

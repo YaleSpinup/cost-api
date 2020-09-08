@@ -131,7 +131,7 @@ func TestParseQuery(t *testing.T) {
 		{
 			query: "period=true",
 			input: cloudwatch.MetricsRequest{},
-			err:   errors.New("failed to parse period as duration: time: invalid duration true"),
+			err:   errors.New("failed to parse period as duration: time: invalid duration \"true\""),
 		},
 		{
 			query: "height=-100",
