@@ -160,17 +160,19 @@ func getTimeAPI(startTime, endTime string) (string, string, error) {
 	return sTmp.Format("2006-01-02"), eTmp.Format("2006-01-02"), nil
 }
 
-// spaceIDFilter returns the cost explorer expression to filter on spaceid
+// inSpace returns the cost explorer expression to filter on spaceid
 func inSpace(spaceID string) *costexplorer.Expression {
 	return ce.Tag("spinup:spaceid", []string{spaceID})
 }
 
+// inOrg returns the cost explorer expression to filter on org
 func inOrg(org string) *costexplorer.Expression {
 	yaleTag := ce.Tag("yale:org", []string{org})
 	spinupTag := ce.Tag("spinup:org", []string{org})
 	return ce.Or(yaleTag, spinupTag)
 }
 
+// notTryIT returns the cost explorer expression to filter out tryits
 func notTryIT() *costexplorer.Expression {
 	yaleTag := ce.Tag("yale:subsidized", []string{"true"})
 	spinupTag := ce.Tag("spinup:subsidized", []string{"true"})
