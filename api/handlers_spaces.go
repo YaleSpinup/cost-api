@@ -12,44 +12,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
+	ce "github.com/YaleSpinup/cost-api/costexplorer"
 	log "github.com/sirupsen/logrus"
 )
-
-// getTimeDefault returns time range from beginning of month to day-of-month now
-func getTimeDefault() (string, string) {
-	// if it's the first day of the month, get today's usage thus far
-	y, m, d := time.Now().Date()
-	if d == 1 {
-		d = 3
-	}
-	return fmt.Sprintf("%d-%02d-01", y, m), fmt.Sprintf("%d-%02d-%02d", y, m, d)
-}
-
-// getTimeAPI returns time parsed from API input
-func getTimeAPI(startTime, endTime string) (string, string, error) {
-	log.Debugf("startTime: %s, endTime: %s ", startTime, endTime)
-
-	// sTmp and eTmp temporary vars to hold time.Time objects
-	sTmp, err := time.Parse("2006-01-02", startTime)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "error parsing StartTime from input")
-	}
-
-	eTmp, err := time.Parse("2006-01-02", endTime)
-	if err != nil {
-		return "", "", errors.Wrapf(err, "error parsing EndTime from input")
-	}
-
-	// if time on the API input is already borked, don't continue
-	// end time is greater than start time, logically
-	timeValidity := eTmp.After(sTmp)
-	if !timeValidity {
-		return "", "", errors.Errorf("endTime should be greater than startTime")
-	}
-
-	// convert time.Time to a string
-	return sTmp.Format("2006-01-02"), eTmp.Format("2006-01-02"), nil
-}
 
 // SpaceGetHandler gets the cost for a space, grouped by the service.  By default,
 // it pulls data from the start of the month until now.
@@ -103,60 +68,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := costexplorer.GetCostAndUsageInput{
-		Filter: &costexplorer.Expression{
-			And: []*costexplorer.Expression{
-				&costexplorer.Expression{
-					Tags: &costexplorer.TagValues{
-						Key: aws.String("spinup:spaceid"),
-						Values: []*string{
-							aws.String(spaceID),
-						},
-					},
-				},
-				&costexplorer.Expression{
-					Or: []*costexplorer.Expression{
-						&costexplorer.Expression{
-							Tags: &costexplorer.TagValues{
-								Key: aws.String("yale:org"),
-								Values: []*string{
-									aws.String(Org),
-								},
-							},
-						},
-						&costexplorer.Expression{
-							Tags: &costexplorer.TagValues{
-								Key: aws.String("spinup:org"),
-								Values: []*string{
-									aws.String(Org),
-								},
-							},
-						},
-					},
-				},
-				&costexplorer.Expression{
-					Not: &costexplorer.Expression{
-						Or: []*costexplorer.Expression{
-							&costexplorer.Expression{
-								Tags: &costexplorer.TagValues{
-									Key: aws.String("yale:subsidized"),
-									Values: []*string{
-										aws.String("true"),
-									},
-								},
-							},
-							&costexplorer.Expression{
-								Tags: &costexplorer.TagValues{
-									Key: aws.String("spinup:subsidized"),
-									Values: []*string{
-										aws.String("true"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+		Filter:      ce.And(inSpace(spaceID), inOrg(Org), notTryIT()),
 		Granularity: aws.String("MONTHLY"),
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
@@ -210,4 +122,59 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write(j)
 
+}
+
+// getTimeDefault returns time range from beginning of month to day-of-month now
+func getTimeDefault() (string, string) {
+	// if it's the first day of the month, get today's usage thus far
+	y, m, d := time.Now().Date()
+	if d == 1 {
+		d = 3
+	}
+	return fmt.Sprintf("%d-%02d-01", y, m), fmt.Sprintf("%d-%02d-%02d", y, m, d)
+}
+
+// getTimeAPI returns time parsed from API input
+func getTimeAPI(startTime, endTime string) (string, string, error) {
+	log.Debugf("startTime: %s, endTime: %s ", startTime, endTime)
+
+	// sTmp and eTmp temporary vars to hold time.Time objects
+	sTmp, err := time.Parse("2006-01-02", startTime)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "error parsing StartTime from input")
+	}
+
+	eTmp, err := time.Parse("2006-01-02", endTime)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "error parsing EndTime from input")
+	}
+
+	// if time on the API input is already borked, don't continue
+	// end time is greater than start time, logically
+	timeValidity := eTmp.After(sTmp)
+	if !timeValidity {
+		return "", "", errors.Errorf("endTime should be greater than startTime")
+	}
+
+	// convert time.Time to a string
+	return sTmp.Format("2006-01-02"), eTmp.Format("2006-01-02"), nil
+}
+
+// inSpace returns the cost explorer expression to filter on spaceid
+func inSpace(spaceID string) *costexplorer.Expression {
+	return ce.Tag("spinup:spaceid", []string{spaceID})
+}
+
+// inOrg returns the cost explorer expression to filter on org
+func inOrg(org string) *costexplorer.Expression {
+	yaleTag := ce.Tag("yale:org", []string{org})
+	spinupTag := ce.Tag("spinup:org", []string{org})
+	return ce.Or(yaleTag, spinupTag)
+}
+
+// notTryIT returns the cost explorer expression to filter out tryits
+func notTryIT() *costexplorer.Expression {
+	yaleTag := ce.Tag("yale:subsidized", []string{"true"})
+	spinupTag := ce.Tag("spinup:subsidized", []string{"true"})
+	return ce.Not(ce.Or(yaleTag, spinupTag))
 }

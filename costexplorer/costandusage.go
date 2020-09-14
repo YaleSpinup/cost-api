@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/YaleSpinup/apierror"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,4 +27,37 @@ func (c *CostExplorer) GetCostAndUsage(ctx context.Context, input *costexplorer.
 	log.Debugf("got cost and usage: %+v", out)
 
 	return out.ResultsByTime, nil
+}
+
+// And returns the expressions wrapped in And
+func And(exp ...*costexplorer.Expression) *costexplorer.Expression {
+	expressions := []*costexplorer.Expression{}
+	return &costexplorer.Expression{
+		And: append(expressions, exp...),
+	}
+}
+
+// Or returns the expressions wrapped in Or
+func Or(exp ...*costexplorer.Expression) *costexplorer.Expression {
+	expressions := []*costexplorer.Expression{}
+	return &costexplorer.Expression{
+		Or: append(expressions, exp...),
+	}
+}
+
+// Not returns the negated expression
+func Not(exp *costexplorer.Expression) *costexplorer.Expression {
+	return &costexplorer.Expression{
+		Not: exp,
+	}
+}
+
+// Tag returns the cost explorer expression to filter on tag
+func Tag(key string, values []string) *costexplorer.Expression {
+	return &costexplorer.Expression{
+		Tags: &costexplorer.TagValues{
+			Key:    aws.String(key),
+			Values: aws.StringSlice(values),
+		},
+	}
 }
