@@ -10,6 +10,7 @@ GET /v1/cost/version
 GET /v1/cost/metrics
 
 GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30]
+GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}[?start=2019-10-01&end=2019-10-30]
 
 GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
@@ -20,9 +21,46 @@ GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberO
 GET /v1/metrics/{account}/rds/{type}/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
+## How it works
+
+Costs are Filtered - the keys/values are resource tags
+
+```json
+{
+  Filter: {
+    And: [
+      {
+        Tags: {
+          Key: "Name",
+          Values: ["spinup-000cba.spinup.yale.edu"]
+        }
+      },
+      {
+        Tags: {
+          Key: "spinup:spaceid",
+          Values: ["spinup-0002a2"]
+        }
+      },
+      {
+        Or: [{
+            Tags: {
+              Key: "yale:org",
+              Values: ["ss"]
+            }
+          },{
+            Tags: {
+              Key: "spinup:org",
+              Values: ["ss"]
+            }
+          }]
+      }
+  }
+}
+```
+
 ## Usage
 
-### Get the cost and usage for a space ID
+### Get the cost and usage for a space ID, using tags
 
 By default, this will get the month to date costs for a space id (based on the `spinup:spaceid` tag).
 
@@ -60,6 +98,15 @@ GET /v1/cost/{account}/spaces/{spaceid}
     }
 ]
 ```
+
+### Get the cost and usage for a resourcename within a space ID, using tags
+
+By default, this will get the month to date costs for a resource name with a space id
+
+tags
+
+- spinup:spaceid
+- Name
 
 ### Get cloudwatch metrics widgets URL from S3 for an instance ID
 

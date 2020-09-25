@@ -16,10 +16,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SpaceGetHandler gets the cost for a space, grouped by the service.  By default,
+// ResourceGetHandler gets the cost for a space, grouped by the service.  By default,
 // it pulls data from the start of the month until now.
-func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) ResourceGetHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
+
+	log.Debugf("ResourceGetHandler Called")
 
 	// loop thru and log given API input vars in debug
 	vars := mux.Vars(r)
@@ -32,6 +34,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := vars["start"]
 	endTime := vars["end"]
 	spaceID := vars["space"]
+	name := vars["resourcename"]
 
 	ceService, ok := s.costExplorerServices[account]
 	if !ok {
@@ -67,8 +70,14 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	/*
+		https://docs.aws.amazon.com/aws-cost-management/latest/APIReference/API_GetCostAndUsage.html
+
+		https://docs.aws.amazon.com/sdk-for-go/api/service/costexplorer/
+	*/
+
 	input := costexplorer.GetCostAndUsageInput{
-		Filter:      ce.And(inSpace(spaceID), inOrg(Org), notTryIT()),
+		Filter:      ce.And(ofName(name), inSpace(spaceID), inOrg(Org), notTryIT()),
 		Granularity: aws.String("MONTHLY"),
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
@@ -84,7 +93,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	// create a cacheKey more unique than spaceID for managing cache objects.
 	// Since we will accept date-range cost exploring, concatenate the spaceID
 	// and the start and end time so we can cache each time-based result
-	cacheKey := fmt.Sprintf("%s_%s_%s", spaceID, startTime, endTime)
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s", spaceID, name, startTime, endTime)
 	log.Debugf("cacheKey: %s", cacheKey)
 
 	// the object is not found in the cache, call AWS cost-explorer and set cache
