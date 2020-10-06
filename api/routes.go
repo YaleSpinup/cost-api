@@ -18,6 +18,9 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).
 		Queries("start", "{start}", "end", "{end}").Methods(http.MethodGet)
 	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).
+		Queries("start", "{start}", "end", "{end}").Methods(http.MethodGet)
+	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet)
 
 	// metrics endpoints for EC2 instances
 	// TODO: deprecated but left for backwards compatability, remove me once the UI is updated
