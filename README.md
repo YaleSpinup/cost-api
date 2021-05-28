@@ -12,8 +12,14 @@ GET /v1/cost/metrics
 GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30]
 GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}[?start=2019-10-01&end=2019-10-30]
 
+POST /v1/cost/{account}/spaces/{spaceid}/budgets
+GET /v1/cost/{account}/spaces/{spaceid}/budgets
+DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
+
+### DEPRECATED ###
 GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
+##################
 
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
@@ -107,6 +113,94 @@ tags
 
 - spinup:spaceid
 - Name
+
+### Create Budgets Alerts
+
+#### Request
+
+POST /v1/cost/{account}/spaces/{spaceid}/budgets
+
+```json
+{
+    "Amount": "10",
+    "TimeUnit": "MONTHLY",
+    "Alerts": [
+        {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100,
+            "ThresholdType": "PERCENTAGE",
+            "Addresses": ["some.user@yale.edu", "some.other@yale.edu"]
+        }
+    ]
+}
+```
+
+#### Response
+
+```json
+{
+    "Amount": "10",
+    "Name": "spintst-000028-MONTHLY-01",
+    "TimeUnit": "MONTHLY",
+    "Alerts": [
+        {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100,
+            "ThresholdType": "PERCENTAGE",
+            "Addresses": ["some.user@yale.edu", "some.other@yale.edu"]
+        }
+    ]
+}
+```
+
+### List Budgets Alerts
+
+GET /v1/cost/{account}/spaces/{spaceid}/budgets
+
+### Response
+
+```json
+[
+    "spintst-000028-MONTHLY-01"
+]
+```
+
+### GET details about a  Budgets Alert
+
+GET /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
+
+### Response
+
+```json
+{
+    "Amount": "10",
+    "Name": "spintst-000028-MONTHLY-01",
+    "TimeUnit": "MONTHLY",
+    "Alerts": [
+        {
+            "ComparisonOperator": "GREATER_THAN",
+            "NotificationState": "",
+            "NotificationType": "FORECASTED",
+            "Threshold": 100,
+            "ThresholdType": "PERCENTAGE",
+            "Addresses": ["some.user@yale.edu", "some.other@yale.edu"]
+        }
+    ]
+}
+```
+
+### Delete Budgets Alert
+
+DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
+
+### Response
+
+```json
+"OK"
+```
 
 ### Get cloudwatch metrics widgets URL from S3 for an instance ID
 

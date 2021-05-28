@@ -32,6 +32,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := vars["start"]
 	endTime := vars["end"]
 	spaceID := vars["space"]
+	groupBy := vars["groupby"]
 
 	ceService, ok := s.costExplorerServices[account]
 	if !ok {
@@ -68,7 +69,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := costexplorer.GetCostAndUsageInput{
-		Filter:      ce.And(inSpace(spaceID), inOrg(Org), notTryIT()),
+		Filter:      ce.And(inSpace(spaceID), inOrg(s.org), notTryIT()),
 		Granularity: aws.String("MONTHLY"),
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
@@ -81,17 +82,27 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	if groupBy != "" {
+		input.GroupBy = []*costexplorer.GroupDefinition{
+			{
+				Key:  aws.String(groupBy),
+				Type: aws.String("DIMENSION"),
+			},
+		}
+	}
+
 	// create a cacheKey more unique than spaceID for managing cache objects.
-	// Since we will accept date-range cost exploring, concatenate the spaceID
-	// and the start and end time so we can cache each time-based result
-	cacheKey := fmt.Sprintf("%s_%s_%s", spaceID, startTime, endTime)
+	// Since we will accept date-range cost exploring and grouping, concatenate
+	// the spaceID, the start time, end time and group by so we can cache each
+	// time-based result
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s", spaceID, startTime, endTime, groupBy)
 	log.Debugf("cacheKey: %s", cacheKey)
 
 	// the object is not found in the cache, call AWS cost-explorer and set cache
 	var out []*costexplorer.ResultByTime
 	c, expire, ok := resultCache.GetWithExpiration(cacheKey)
 	if !ok || c == nil {
-		log.Debugf("cache empty for org, and space-cacheKey: %s, %s, calling cost-explorer", Org, cacheKey)
+		log.Debugf("cache empty for org, and space-cacheKey: %s, %s, calling cost-explorer", s.org, cacheKey)
 		// call cost-explorer
 		var err error
 		out, err = ceService.GetCostAndUsage(r.Context(), &input)
@@ -178,7 +189,7 @@ func (s *server) SpaceResourceGetHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	input := costexplorer.GetCostAndUsageInput{
-		Filter:      ce.And(ofName(name), inSpace(spaceID), inOrg(Org), notTryIT()),
+		Filter:      ce.And(ofName(name), inSpace(spaceID), inOrg(s.org), notTryIT()),
 		Granularity: aws.String("MONTHLY"),
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
@@ -201,7 +212,7 @@ func (s *server) SpaceResourceGetHandler(w http.ResponseWriter, r *http.Request)
 	var out []*costexplorer.ResultByTime
 	c, expire, ok := resultCache.GetWithExpiration(cacheKey)
 	if !ok || c == nil {
-		log.Debugf("cache empty for org, and space-cacheKey: %s, %s, calling cost-explorer", Org, cacheKey)
+		log.Debugf("cache empty for org, and space-cacheKey: %s, %s, calling cost-explorer", s.org, cacheKey)
 		// call cost-explorer
 		var err error
 		out, err = ceService.GetCostAndUsage(r.Context(), &input)

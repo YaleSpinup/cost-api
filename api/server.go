@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/YaleSpinup/aws-go/services/session"
 	"github.com/YaleSpinup/cost-api/cloudwatch"
 	"github.com/YaleSpinup/cost-api/common"
 	"github.com/YaleSpinup/cost-api/costexplorer"
@@ -19,19 +20,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	// Org will carry throughout the api and get tagged on resources
-	Org string
-)
-
 type server struct {
 	router               *mux.Router
 	version              common.Version
 	context              context.Context
 	costExplorerServices map[string]costexplorer.CostExplorer
 	cloudwatchServices   map[string]cloudwatch.Cloudwatch
+	session              session.Session
+	orgPolicy            string
 	resultCache          map[string]*cache.Cache
 	imageCache           imagecache.ImageCache
+	org                  string
 }
 
 // NewServer creates a new server and starts it
@@ -52,7 +51,13 @@ func NewServer(config common.Config) error {
 	if config.Org == "" {
 		return errors.New("'org' cannot be empty in the configuration")
 	}
-	Org = config.Org
+	s.org = config.Org
+
+	orgPolicy, err := orgTagAccessPolicy(config.Org)
+	if err != nil {
+		return err
+	}
+	s.orgPolicy = orgPolicy
 
 	if config.CacheExpireTime == "" {
 		// set default expireTime
@@ -80,15 +85,24 @@ func NewServer(config common.Config) error {
 
 	// Create shared cost explorer sessions, cloudwatch sessions, and go-cache instances per account defined in the config
 	for name, c := range config.Accounts {
-		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
+		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, s.org)
 		s.costExplorerServices[name] = costexplorer.NewSession(c)
 
-		log.Debugf("creating new cloudwatch service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, Org)
+		log.Debugf("creating new cloudwatch service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, s.org)
 		s.cloudwatchServices[name] = cloudwatch.NewSession(c)
 
 		log.Debugf("creating new result cache for account '%s' with expire time: %s and purge time: %s", name, expireTime.String(), purgeTime.String())
 		s.resultCache[name] = cache.New(expireTime, purgeTime)
 	}
+
+	// Create a new session used for authentication and assuming cross account roles
+	log.Debugf("Creating new session with key '%s' in region '%s'", config.Account.Akid, config.Account.Region)
+	s.session = session.New(
+		session.WithCredentials(config.Account.Akid, config.Account.Secret, ""),
+		session.WithRegion(config.Account.Region),
+		session.WithExternalID(config.Account.ExternalID),
+		session.WithExternalRoleName(config.Account.Role),
+	)
 
 	// if specified, configure s3 image cache
 	if config.ImageCache != nil {

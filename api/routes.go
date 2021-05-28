@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -15,12 +16,15 @@ func (s *server) routes() {
 	api.Handle("/metrics", promhttp.Handler()).Methods(http.MethodGet)
 
 	// cost endpoints for a space
-	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).
-		Queries("start", "{start}", "end", "{end}").Methods(http.MethodGet)
-	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).Methods(http.MethodGet)
-	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).
-		Queries("start", "{start}", "end", "{end}").Methods(http.MethodGet)
-	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/spaces/{space}", s.SpaceGetHandler).Methods(http.MethodGet).MatcherFunc(matchSpaceQueries)
+
+	api.HandleFunc("/{account}/spaces/{space}/budgets", s.SpaceBudgetsCreatehandler).Methods(http.MethodPost)
+	api.HandleFunc("/{account}/spaces/{space}/budgets", s.SpaceBudgetsListHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsShowHandler).Methods(http.MethodGet)
+	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsDeleteHandler).Methods(http.MethodDelete)
+
+	// TODO disabled because of cost for the costexplorer calls
+	// api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet).MatcherFunc(matchSpaceQueries)
 
 	// metrics endpoints for EC2 instances
 	// TODO: deprecated but left for backwards compatability, remove me once the UI is updated
@@ -40,4 +44,37 @@ func (s *server) routes() {
 	metricsApi.HandleFunc("/{account}/buckets/{bucket}/graph", s.GetS3MetricsURLHandler).Queries("metric", "{metric:(?:BucketSizeBytes|NumberOfObjects)}").Methods(http.MethodGet)
 	// metrics endpoints for RDS services
 	metricsApi.HandleFunc("/{account}/rds/{type}/{id}/graph", s.GetRDSMetricsURLHandler).Methods(http.MethodGet)
+}
+
+// custom matcher for space queries
+func matchSpaceQueries(req *http.Request, r *mux.RouteMatch) bool {
+	queries := req.URL.Query()
+	if len(queries) == 0 {
+		return true
+	}
+
+	if r.Vars == nil {
+		r.Vars = make(map[string]string)
+	}
+
+	s, sok := queries["start"]
+	if sok {
+		r.Vars["start"] = s[0]
+	}
+
+	e, eok := queries["end"]
+	if eok {
+		r.Vars["end"] = e[0]
+	}
+
+	// start and end must be in the same state
+	if sok != eok {
+		return false
+	}
+
+	if g, ok := queries["groupby"]; ok {
+		r.Vars["groupby"] = g[0]
+	}
+
+	return true
 }

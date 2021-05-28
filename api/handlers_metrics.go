@@ -50,7 +50,7 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", Org, instanceId, strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s%s", s.org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
@@ -129,7 +129,7 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", Org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s%s", s.org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req.String())
 	log.Debugf("object key: %s", key)
 
 	hashedCacheKey := s.imageCache.HashedKey(key)
@@ -220,7 +220,7 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", Org, bucketName, metric, req.String())
+	key := fmt.Sprintf("%s/%s/%s%s", s.org, bucketName, metric, req.String())
 	log.Debugf("object key: %s", key)
 
 	hashedCacheKey := s.imageCache.HashedKey(key)
@@ -296,7 +296,7 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", Org, instanceId, strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s%s", s.org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
 	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
