@@ -9,7 +9,7 @@ GET /v1/cost/ping
 GET /v1/cost/version
 GET /v1/cost/metrics
 
-GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30]
+GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30][&groupBy=SERVICE]
 GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}[?start=2019-10-01&end=2019-10-30]
 
 POST /v1/cost/{account}/spaces/{spaceid}/budgets
@@ -27,50 +27,14 @@ GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberO
 GET /v1/metrics/{account}/rds/{type}/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ```
 
-## How it works
+## Cost Usage
 
-Costs are Filtered - the keys/values are resource tags
+### Get the cost and usage for a space ID
 
-```json
-{
-  Filter: {
-    And: [
-      {
-        Tags: {
-          Key: "Name",
-          Values: ["spinup-000cba.spinup.yale.edu"]
-        }
-      },
-      {
-        Tags: {
-          Key: "spinup:spaceid",
-          Values: ["spinup-0002a2"]
-        }
-      },
-      {
-        Or: [{
-            Tags: {
-              Key: "yale:org",
-              Values: ["ss"]
-            }
-          },{
-            Tags: {
-              Key: "spinup:org",
-              Values: ["ss"]
-            }
-          }]
-      }
-  }
-}
-```
+By default, this will get the month to date costs for a space id (based on the `spinup:spaceid` tag).  Date ranges and grouping by
+different dimensions is supported by passing query parameters.
 
-## Usage
-
-### Get the cost and usage for a space ID, using tags
-
-By default, this will get the month to date costs for a space id (based on the `spinup:spaceid` tag).
-
-#### Request
+#### Request month to date costs for a space
 
 ```
 GET /v1/cost/{account}/spaces/{spaceid}
@@ -105,14 +69,299 @@ GET /v1/cost/{account}/spaces/{spaceid}
 ]
 ```
 
-### Get the cost and usage for a resourcename within a space ID, using tags
+#### Request costs for a space for a date range
+
+```
+GET /v1/cost/{account}/spaces/{spaceid}?start=2021-04-01&end=2021-05-31
+```
+
+#### Response
+
+```json
+[
+    {
+        "Estimated": false,
+        "Groups": [],
+        "TimePeriod": {
+            "End": "2021-05-01",
+            "Start": "2021-04-01"
+        },
+        "Total": {
+            "BlendedCost": {
+                "Amount": "8.1395432009",
+                "Unit": "USD"
+            },
+            "UnblendedCost": {
+                "Amount": "8.1395437889",
+                "Unit": "USD"
+            },
+            "UsageQuantity": {
+                "Amount": "37095.8855728516",
+                "Unit": "N/A"
+            }
+        }
+    },
+    {
+        "Estimated": true,
+        "Groups": [],
+        "TimePeriod": {
+            "End": "2021-05-31",
+            "Start": "2021-05-01"
+        },
+        "Total": {
+            "BlendedCost": {
+                "Amount": "3.2187441928",
+                "Unit": "USD"
+            },
+            "UnblendedCost": {
+                "Amount": "3.2187483458",
+                "Unit": "USD"
+            },
+            "UsageQuantity": {
+                "Amount": "8466.9944576915",
+                "Unit": "N/A"
+            }
+        }
+    }
+]
+```
+
+#### Request costs for a space by date range and grouped by a dimension
+
+```
+GET /v1/cost/{account}/spaces/{spaceid}?start=2021-04-01&end=2021-05-31&groupby=INSTANCE_TYPE_FAMILY
+```
+
+Valid 'groupby' values are AZ, INSTANCE_TYPE, LINKED_ACCOUNT, OPERATION, PURCHASE_TYPE, SERVICE, USAGE_TYPE, PLATFORM, TENANCY, RECORD_TYPE, LEGAL_ENTITY_NAME, DEPLOYMENT_OPTION, DATABASE_ENGINE, CACHE_ENGINE, INSTANCE_TYPE_FAMILY, REGION, BILLING_ENTITY, RESERVATION_ID, SAVINGS_PLANS_TYPE, SAVINGS_PLAN_ARN, OPERATING_SYSTEM.
+
+#### Response
+
+```json
+[
+    {
+        "Estimated": false,
+        "Groups": [
+            {
+                "Keys": [
+                    "NoInstanceTypeFamily"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "2.3325985365",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "2.3325991245",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "36869.1647378516",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "m5a"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "4.008678362",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "4.008678362",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "39.124167",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "t3"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "0.0238622176",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "0.0238622176",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "0.573611",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "t3a"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "1.7744040848",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "1.7744040848",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "187.023057",
+                        "Unit": "N/A"
+                    }
+                }
+            }
+        ],
+        "TimePeriod": {
+            "End": "2021-05-01",
+            "Start": "2021-04-01"
+        },
+        "Total": {}
+    },
+    {
+        "Estimated": true,
+        "Groups": [
+            {
+                "Keys": [
+                    "NoInstanceTypeFamily"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "3.1292908776",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "3.1292950306",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "8466.2786246915",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "c5"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "0.06346661",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "0.06346661",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "0.373333",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "m5a"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "0.025561092",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "0.025561092",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "0.297222",
+                        "Unit": "N/A"
+                    }
+                }
+            },
+            {
+                "Keys": [
+                    "t3a"
+                ],
+                "Metrics": {
+                    "BlendedCost": {
+                        "Amount": "0.0004256132",
+                        "Unit": "USD"
+                    },
+                    "UnblendedCost": {
+                        "Amount": "0.0004256132",
+                        "Unit": "USD"
+                    },
+                    "UsageQuantity": {
+                        "Amount": "0.045278",
+                        "Unit": "N/A"
+                    }
+                }
+            }
+        ],
+        "TimePeriod": {
+            "End": "2021-05-31",
+            "Start": "2021-05-01"
+        },
+        "Total": {}
+    }
+]
+```
+
+### Get the cost and usage for a resource (name) within a space ID
 
 By default, this will get the month to date costs for a resource name with a space id
 
-tags
+```
+GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}
+```
 
-- spinup:spaceid
-- Name
+### How it works
+
+Costs are Filtered - the keys/values are resource tags
+
+```json
+{
+  "Filter": {
+    "And": [
+      {
+        "Tags": {
+          "Key": "Name",
+          "Values": ["spinup-000cba.spinup.yale.edu"]
+        }
+      },
+      {
+        "Tags": {
+          "Key": "spinup:spaceid",
+          "Values": ["spinup-0002a2"]
+        }
+      },
+      {
+        "Or": [
+          {
+            "Tags": {
+              "Key": "yale:org",
+              "Values": ["ss"]
+            }
+          },
+          {
+            "Tags": {
+              "Key": "spinup:org",
+              "Values": ["ss"]
+            }
+          }]
+      }
+    ]
+  }
+}
+```
+
+## Budget Usage
 
 ### Create Budgets Alerts
 
@@ -201,6 +450,8 @@ DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
 ```json
 "OK"
 ```
+
+## Metrics Usage
 
 ### Get cloudwatch metrics widgets URL from S3 for an instance ID
 
