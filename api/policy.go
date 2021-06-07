@@ -47,6 +47,9 @@ func budgetReadWritePolicy() (string, error) {
 				Action: []string{
 					"budgets:ViewBudget",
 					"budgets:ModifyBudget",
+					"SNS:CreateTopic",
+					"SNS:DeleteTopic",
+					"SNS:Subscribe",
 				},
 				Resource: []string{"*"},
 			},
@@ -60,4 +63,30 @@ func budgetReadWritePolicy() (string, error) {
 
 	return string(j), nil
 
+}
+
+func defaultBudgetTopicPolicy(arn string) (string, error) {
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Sid:    "AWSBudgetsSNSPublishingPermissions",
+				Effect: "Allow",
+				Principal: iam.Principal{
+					"Service": iam.Value{
+						"budgets.amazonaws.com",
+					},
+				},
+				Action:   []string{"SNS:Publish"},
+				Resource: []string{arn},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
 }

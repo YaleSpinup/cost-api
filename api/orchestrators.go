@@ -1,15 +1,20 @@
 package api
 
-import "github.com/YaleSpinup/cost-api/budgets"
+import (
+	"github.com/YaleSpinup/cost-api/budgets"
+	"github.com/YaleSpinup/cost-api/sns"
+)
 
 type budgetsOrchestrator struct {
-	client budgets.Budgets
-	org    string
+	client    *budgets.Budgets
+	snsClient *sns.SNS
+	org       string
 }
 
-func newBudgetsOrchestrator(client budgets.Budgets, org string) *budgetsOrchestrator {
+func newBudgetsOrchestrator(budgetsClient *budgets.Budgets, snsClient *sns.SNS, org string) *budgetsOrchestrator {
 	return &budgetsOrchestrator{
-		client: client,
-		org:    org,
+		client:    budgetsClient,
+		snsClient: snsClient,
+		org:       org,
 	}
 }

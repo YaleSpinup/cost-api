@@ -2,7 +2,9 @@ package api
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/budgets"
+	"github.com/aws/aws-sdk-go/service/sns"
 )
 
 // BudgetCreateRequest is the request object to create a Budget
@@ -16,9 +18,14 @@ type BudgetCreateRequest struct {
 	// Alerts is a list of threshold/notification configurations for
 	// a budget.  Maximum number is 5.
 	Alerts []*BudgetAlert
+
+	Tags []*Tag
 }
 
 type BudgetAlert struct {
+	// Addresses are the email addresses for notifications (up to 10)
+	Addresses []string
+
 	// The comparison that is used for this notification.
 	ComparisonOperator string
 
@@ -43,9 +50,6 @@ type BudgetAlert struct {
 	// For example, if you have a budget for 200 dollars and you have a PERCENTAGE
 	// threshold of 80%, AWS notifies you when you go over 160 dollars.
 	ThresholdType string
-
-	// Addresses are the email addresses for notifications (up to 10)
-	Addresses []string
 }
 
 // BudgetResponse is the standard respoonse for a Budget
@@ -56,10 +60,21 @@ type BudgetResponse struct {
 	Alerts   []*BudgetAlert
 }
 
+type Tag struct {
+	Key   string
+	Value string
+}
+
 func toBudgetAlert(notification *budgets.Notification, subscribers []*budgets.Subscriber) *BudgetAlert {
-	addresses := make([]string, len(subscribers))
-	for i, s := range subscribers {
-		addresses[i] = aws.StringValue(s.Address)
+	addresses := []string{}
+	for _, s := range subscribers {
+		a := aws.StringValue(s.Address)
+
+		if _, err := arn.Parse(a); err == nil {
+			continue
+		}
+
+		addresses = append(addresses, a)
 	}
 
 	return &BudgetAlert{
@@ -79,4 +94,16 @@ func toBudgetResponse(budget *budgets.Budget, alerts []*BudgetAlert) *BudgetResp
 		TimeUnit: aws.StringValue(budget.TimeUnit),
 		Alerts:   alerts,
 	}
+}
+
+func toSnsTag(tags []*Tag) []*sns.Tag {
+	snsTags := make([]*sns.Tag, len(tags))
+	for i, t := range tags {
+		snsTags[i] = &sns.Tag{
+			Key:   aws.String(t.Key),
+			Value: aws.String(t.Value),
+		}
+	}
+
+	return snsTags
 }

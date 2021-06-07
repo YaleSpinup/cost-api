@@ -20,35 +20,35 @@ type Budgets struct {
 
 type BudgetsOption func(*Budgets)
 
-func New(opts ...BudgetsOption) Budgets {
-	b := Budgets{}
+func New(opts ...BudgetsOption) *Budgets {
+	client := Budgets{}
 
 	for _, opt := range opts {
-		opt(&b)
+		opt(&client)
 	}
 
-	if b.session != nil {
-		b.Service = budgets.New(b.session)
+	if client.session != nil {
+		client.Service = budgets.New(client.session)
 	}
 
-	return b
+	return &client
 }
 
 func WithSession(sess *session.Session) BudgetsOption {
-	return func(b *Budgets) {
+	return func(client *Budgets) {
 		log.Debug("using aws session")
-		b.session = sess
+		client.session = sess
 	}
 }
 
 func WithCredentials(key, secret, token, region string) BudgetsOption {
-	return func(b *Budgets) {
+	return func(client *Budgets) {
 		log.Debugf("creating new session with key id %s in region %s", key, region)
 		sess := session.Must(session.NewSession(&aws.Config{
 			Credentials: credentials.NewStaticCredentials(key, secret, token),
 			Region:      aws.String(region),
 		}))
-		b.session = sess
+		client.session = sess
 	}
 }
 
@@ -59,12 +59,9 @@ func (b *Budgets) CreateBudget(ctx context.Context, input *budgets.CreateBudgetI
 
 	log.Infof("creating budget %s", aws.StringValue(input.Budget.BudgetName))
 
-	out, err := b.Service.CreateBudgetWithContext(ctx, input)
-	if err != nil {
+	if _, err := b.Service.CreateBudgetWithContext(ctx, input); err != nil {
 		return ErrCode("failed to create Budget", err)
 	}
-
-	log.Debugf("got output creating budget: %+v", out)
 
 	return nil
 }
@@ -137,6 +134,8 @@ func (b *Budgets) DescribeBudget(ctx context.Context, account, budget string) (*
 		return nil, ErrCode("failed to describe budget", err)
 	}
 
+	log.Debugf("output describing budget: %+v", out)
+
 	return out.Budget, nil
 }
 
@@ -155,6 +154,8 @@ func (b *Budgets) DescribeNotifications(ctx context.Context, account, budget str
 	if err != nil {
 		return nil, ErrCode("failed to describe budget", err)
 	}
+
+	log.Debugf("output describing budget notification: %+v", out)
 
 	return out.Notifications, nil
 }
@@ -175,6 +176,8 @@ func (b *Budgets) DescribeSubscribers(ctx context.Context, account, budget strin
 	if err != nil {
 		return nil, ErrCode("failed to describe budget", err)
 	}
+
+	log.Debugf("output describing budget notification subscribers: %+v", out)
 
 	return out.Subscribers, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/YaleSpinup/apierror"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/budgets"
+	"github.com/aws/aws-sdk-go/service/sns"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,8 @@ func (o *budgetsOrchestrator) CreateBudget(ctx context.Context, account, spaceID
 		return nil, apierror.New(apierror.ErrBadRequest, msg, nil)
 	}
 
-	budgetName := fmt.Sprintf("%s-%s-01", spaceID, req.TimeUnit)
+	// budget name spinup_org_spaceid_TIMEUNIT-01
+	budgetName := fmt.Sprintf("spinup_%s_%s_%s-01", o.org, spaceID, req.TimeUnit)
 	spaceTagFilterValue := fmt.Sprintf("user:spinup:spaceid$%s", spaceID)
 
 	// set some reasonable defaults for budgets
@@ -43,8 +45,8 @@ func (o *budgetsOrchestrator) CreateBudget(ctx context.Context, account, spaceID
 		},
 		CostTypes: &budgets.CostTypes{
 			IncludeCredit:            aws.Bool(false),
-			IncludeDiscount:          aws.Bool(false),
-			IncludeOtherSubscription: aws.Bool(true),
+			IncludeDiscount:          aws.Bool(true),
+			IncludeOtherSubscription: aws.Bool(false),
 			IncludeRecurring:         aws.Bool(true),
 			IncludeRefund:            aws.Bool(false),
 			IncludeSubscription:      aws.Bool(true),
@@ -63,22 +65,47 @@ func (o *budgetsOrchestrator) CreateBudget(ctx context.Context, account, spaceID
 		return nil, apierror.New(apierror.ErrBadRequest, "up to 5 Alerts per budget are supported", nil)
 	}
 
+	// create a topic with the name budgets-spinup_org_spaceid_TIMEUNIT-01
+	topicName := fmt.Sprintf("budgets-%s", budgetName)
+	arn := fmt.Sprintf("arn:aws:sns:us-east-1:%s:%s", account, topicName)
+	topicPolicy, err := defaultBudgetTopicPolicy(arn)
+	if err != nil {
+		return nil, err
+	}
+
+	topic, err := o.snsClient.CreateTopic(ctx, &sns.CreateTopicInput{
+		Name: aws.String(topicName),
+		Attributes: map[string]*string{
+			"Policy": aws.String(topicPolicy),
+		},
+		Tags: toSnsTag(req.Tags),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	notifications := []*budgets.NotificationWithSubscribers{}
 	for _, a := range req.Alerts {
 		log.Debugf("processing alert %+v", a)
 
-		if len(a.Addresses) == 0 {
-			return nil, apierror.New(apierror.ErrBadRequest, "at least 1 email address is required per Alert", nil)
-		} else if len(a.Addresses) > 10 {
-			return nil, apierror.New(apierror.ErrBadRequest, "up to 10 email addresses per Alert are supported", nil)
+		subscribers := []*budgets.Subscriber{
+			{
+				Address:          topic.TopicArn,
+				SubscriptionType: aws.String("SNS"),
+			},
 		}
 
-		subscribers := make([]*budgets.Subscriber, len(a.Addresses))
-		for i, s := range a.Addresses {
-			subscribers[i] = &budgets.Subscriber{
+		if len(a.Addresses) == 0 {
+			return nil, apierror.New(apierror.ErrBadRequest, "at least 1 email address is required per alert", nil)
+		} else if len(a.Addresses) > 10 {
+			return nil, apierror.New(apierror.ErrBadRequest, "up to 10 email addresses per alert are supported", nil)
+		}
+
+		for _, s := range a.Addresses {
+			subscribers = append(subscribers, &budgets.Subscriber{
 				Address:          aws.String(s),
 				SubscriptionType: aws.String("EMAIL"),
-			}
+			})
 		}
 
 		if !validComparisonOperator(a.ComparisonOperator) {
@@ -121,7 +148,7 @@ func (o *budgetsOrchestrator) CreateBudget(ctx context.Context, account, spaceID
 }
 
 func (o *budgetsOrchestrator) GetBudget(ctx context.Context, account, spaceID, budget string) (*BudgetResponse, error) {
-	if !strings.HasPrefix(budget, spaceID) {
+	if !strings.HasPrefix(budget, budgetPrefix(o.org, spaceID)) {
 		return nil, apierror.New(apierror.ErrBadRequest, "budget doesn't belong to provided space", nil)
 	}
 
@@ -149,7 +176,7 @@ func (o *budgetsOrchestrator) GetBudget(ctx context.Context, account, spaceID, b
 }
 
 func (o *budgetsOrchestrator) ListBudgets(ctx context.Context, account, spaceID string) ([]string, error) {
-	out, err := o.client.ListBudgetsWithPrefix(ctx, account, spaceID)
+	out, err := o.client.ListBudgetsWithPrefix(ctx, account, budgetPrefix(o.org, spaceID))
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +190,14 @@ func (o *budgetsOrchestrator) ListBudgets(ctx context.Context, account, spaceID 
 }
 
 func (o *budgetsOrchestrator) DeleteBudget(ctx context.Context, account, spaceID, budget string) error {
-	if !strings.HasPrefix(budget, spaceID) {
+	if !strings.HasPrefix(budget, budgetPrefix(o.org, spaceID)) {
 		return apierror.New(apierror.ErrBadRequest, "budget doesn't belong to provided space", nil)
+	}
+
+	topicName := fmt.Sprintf("budgets-%s", budget)
+	arn := fmt.Sprintf("arn:aws:sns:us-east-1:%s:%s", account, topicName)
+	if err := o.snsClient.DeleteTopic(ctx, arn); err != nil {
+		return err
 	}
 
 	if err := o.client.DeleteBudget(ctx, account, budget); err != nil {
@@ -172,6 +205,10 @@ func (o *budgetsOrchestrator) DeleteBudget(ctx context.Context, account, spaceID
 	}
 
 	return nil
+}
+
+func budgetPrefix(org, spaceID string) string {
+	return fmt.Sprintf("spinup_%s_%s", org, spaceID)
 }
 
 func validComparisonOperator(co string) bool {
