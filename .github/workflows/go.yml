@@ -1,6 +1,6 @@
 name: Go Build and Test
 
-on: [push, pull_request, release]
+on: [pull_request, release]
 
 jobs:
 
@@ -18,11 +18,6 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
-      with:
-        args: -severity=medium -nosec ./...
-
     - uses: actions/cache@v2
       with:
         path: ~/go/pkg/mod
@@ -37,6 +32,11 @@ jobs:
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
         fi
+
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: -severity=medium -nosec ./...
 
     - name: Test
       run: go test -v .
