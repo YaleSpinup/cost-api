@@ -12,6 +12,13 @@
       "secret": "{{ .spinupsec_secret }}"
     }
   },
+  "account": {
+    "region": "us-east-1",
+    "akid": "{{ .akid }}",
+    "secret": "{{ .secret }}",
+    "externalId": "{{ .external_id }}",
+    "role": "{{ .cross_account_role }}"
+  },
   "imageCache": {
     "region": "us-east-1",
     "bucket": "{{ .imagecache_bucket }}",
