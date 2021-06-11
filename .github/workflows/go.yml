@@ -34,9 +34,10 @@ jobs:
         fi
 
     - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
-      with:
-        args: -severity=medium -nosec ./...
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        go get github.com/securego/gosec/cmd/gosec
+        gosec -severity=medium -nosec ./...
 
     - name: Test
       run: go test -v .
