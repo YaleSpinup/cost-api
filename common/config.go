@@ -12,6 +12,7 @@ import (
 type Config struct {
 	ListenAddress   string
 	Accounts        map[string]Account
+	Account         Account
 	Token           string
 	LogLevel        string
 	Version         Version
@@ -23,10 +24,12 @@ type Config struct {
 
 // Account is the configuration for an individual account
 type Account struct {
-	Endpoint string
-	Region   string
-	Akid     string
-	Secret   string
+	Akid       string
+	Endpoint   string
+	ExternalID string
+	Region     string
+	Role       string
+	Secret     string
 }
 
 // Version carries around the API version information

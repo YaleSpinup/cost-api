@@ -29,6 +29,7 @@ func TestGetTimeDefault(t *testing.T) {
 	} else {
 		t.Errorf("got unexpected sTime: %s\n", sTime)
 	}
+
 	if endTime == eTime {
 		t.Logf("got expected default eTime: %s\n", eTime)
 	} else {
