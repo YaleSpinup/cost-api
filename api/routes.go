@@ -23,8 +23,8 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsShowHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsDeleteHandler).Methods(http.MethodDelete)
 
-	// TODO disabled because of cost for the costexplorer calls
-	// api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet).MatcherFunc(matchSpaceQueries)
+	// TODO remove this - these calls are too expensive
+	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet).MatcherFunc(matchSpaceQueries)
 
 	// metrics endpoints for EC2 instances
 	// TODO: deprecated but left for backwards compatability, remove me once the UI is updated

@@ -62,7 +62,6 @@ func budgetReadWritePolicy() (string, error) {
 	}
 
 	return string(j), nil
-
 }
 
 func defaultBudgetTopicPolicy(arn string) (string, error) {
