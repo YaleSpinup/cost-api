@@ -23,6 +23,8 @@ func (s *server) routes() {
 	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsShowHandler).Methods(http.MethodGet)
 	api.HandleFunc("/{account}/spaces/{space}/budgets/{budget}", s.SpaceBudgetsDeleteHandler).Methods(http.MethodDelete)
 
+	api.HandleFunc("/{account}/spaces/{space}/instances/{id}/optimizer", s.SpaceInstanceOptimizer).Methods(http.MethodGet)
+
 	// TODO remove this - these calls are too expensive
 	api.HandleFunc("/{account}/spaces/{space}/{resourcename}", s.SpaceResourceGetHandler).Methods(http.MethodGet).MatcherFunc(matchSpaceQueries)
 
