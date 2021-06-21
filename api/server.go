@@ -28,6 +28,7 @@ type server struct {
 	cloudwatchServices   map[string]cloudwatch.Cloudwatch
 	session              session.Session
 	orgPolicy            string
+	optimizerCache       *cache.Cache
 	resultCache          map[string]*cache.Cache
 	imageCache           imagecache.ImageCache
 	org                  string
@@ -82,6 +83,9 @@ func NewServer(config common.Config) error {
 		log.Error("Unexpected error with configured purgetime")
 		return err
 	}
+
+	log.Debugf("creating new optimizer cache with expire time: %s and purge time: %s", expireTime.String(), purgeTime.String())
+	s.optimizerCache = cache.New(expireTime, purgeTime)
 
 	// Create shared cost explorer sessions, cloudwatch sessions, and go-cache instances per account defined in the config
 	for name, c := range config.Accounts {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/YaleSpinup/cost-api/budgets"
+	"github.com/YaleSpinup/cost-api/computeoptimizer"
 	"github.com/YaleSpinup/cost-api/sns"
 )
 
@@ -16,5 +17,17 @@ func newBudgetsOrchestrator(budgetsClient *budgets.Budgets, snsClient *sns.SNS, 
 		client:    budgetsClient,
 		snsClient: snsClient,
 		org:       org,
+	}
+}
+
+type optimizerOrchestrator struct {
+	client *computeoptimizer.ComputeOptimizer
+	org    string
+}
+
+func newOptimizerOrchestrator(client *computeoptimizer.ComputeOptimizer, org string) *optimizerOrchestrator {
+	return &optimizerOrchestrator{
+		client: client,
+		org:    org,
 	}
 }

@@ -16,6 +16,8 @@ POST /v1/cost/{account}/spaces/{spaceid}/budgets
 GET /v1/cost/{account}/spaces/{spaceid}/budgets
 DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
 
+GET /v1/cost/{account}/spaces/{space}/instances/{id}/optimizer
+
 ### DEPRECATED ###
 GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
@@ -449,6 +451,228 @@ DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
 
 ```json
 "OK"
+```
+
+## Compute Optimizer recommendations
+
+### Get recommendations for an instance id
+
+GET /v1/cost/{account}/spaces/{space}/instances/{id}/optimizer
+
+#### Empty response
+
+Empty response is usually a result of not enough data for a recommendation.
+
+```json
+[]
+```
+
+#### Response for optimized instance
+
+```json
+[
+    {
+        "AccountId": "1234567890",
+        "CurrentInstanceType": "t3a.medium",
+        "Finding": "OPTIMIZED",
+        "FindingReasonCodes": [],
+        "InstanceArn": "arn:aws:ec2:us-east-1:1234567890:instance/i-1122334455",
+        "InstanceName": "best.bobs.edu",
+        "LastRefreshTimestamp": "2021-06-16T18:21:42.595Z",
+        "LookBackPeriodInDays": 14,
+        "RecommendationOptions": [
+            {
+                "InstanceType": "t3a.medium",
+                "PerformanceRisk": 1,
+                "PlatformDifferences": [],
+                "ProjectedUtilizationMetrics": [
+                    {
+                        "Name": "CPU",
+                        "Statistic": "MAXIMUM",
+                        "Value": 82.72781814545695
+                    }
+                ],
+                "Rank": 1
+            }
+        ],
+        "RecommendationSources": [
+            {
+                "RecommendationSourceArn": "arn:aws:ec2:us-east-1:1234567890:instance/i-1122334455",
+                "RecommendationSourceType": "Ec2Instance"
+            }
+        ],
+        "UtilizationMetrics": [
+            {
+                "Name": "CPU",
+                "Statistic": "MAXIMUM",
+                "Value": 82.72781814545695
+            },
+            {
+                "Name": "EBS_READ_OPS_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 1127.2433333333333
+            },
+            {
+                "Name": "EBS_WRITE_OPS_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 74.5
+            },
+            {
+                "Name": "EBS_READ_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 29981835.9375
+            },
+            {
+                "Name": "EBS_WRITE_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 1845286.4583333333
+            },
+            {
+                "Name": "NETWORK_IN_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 10330.019722222223
+            },
+            {
+                "Name": "NETWORK_OUT_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 507890.63972222223
+            },
+            {
+                "Name": "NETWORK_PACKETS_IN_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 39.420111111111105
+            },
+            {
+                "Name": "NETWORK_PACKETS_OUT_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 328.95061111111113
+            }
+        ]
+    }
+]
+```
+
+#### Response with recommendations
+
+```json
+[
+    {
+        "AccountId": "1234567890",
+        "CurrentInstanceType": "m4.xlarge",
+        "Finding": "UNDER_PROVISIONED",
+        "FindingReasonCodes": [
+            "CPUOverprovisioned",
+            "EBSIOPSOverprovisioned",
+            "EBSThroughputUnderprovisioned"
+        ],
+        "InstanceArn": "arn:aws:ec2:us-east-1:1234567890:instance/i-0987654321",
+        "InstanceName": "knowledge.bobs.edu",
+        "LastRefreshTimestamp": "2021-06-16T18:53:25.669Z",
+        "LookBackPeriodInDays": 14,
+        "RecommendationOptions": [
+            {
+                "InstanceType": "t3.xlarge",
+                "PerformanceRisk": 3,
+                "PlatformDifferences": [
+                    "NetworkInterface",
+                    "Hypervisor",
+                    "StorageInterface"
+                ],
+                "ProjectedUtilizationMetrics": [
+                    {
+                        "Name": "CPU",
+                        "Statistic": "MAXIMUM",
+                        "Value": 44.64812085482684
+                    }
+                ],
+                "Rank": 1
+            },
+            {
+                "InstanceType": "m5.xlarge",
+                "PerformanceRisk": 1,
+                "PlatformDifferences": [
+                    "NetworkInterface",
+                    "Hypervisor",
+                    "StorageInterface"
+                ],
+                "ProjectedUtilizationMetrics": [
+                    {
+                        "Name": "CPU",
+                        "Statistic": "MAXIMUM",
+                        "Value": 44.64812085482684
+                    }
+                ],
+                "Rank": 2
+            },
+            {
+                "InstanceType": "m4.xlarge",
+                "PerformanceRisk": 1,
+                "PlatformDifferences": [],
+                "ProjectedUtilizationMetrics": [
+                    {
+                        "Name": "CPU",
+                        "Statistic": "MAXIMUM",
+                        "Value": 55.5084745762712
+                    }
+                ],
+                "Rank": 3
+            }
+        ],
+        "RecommendationSources": [
+            {
+                "RecommendationSourceArn": "arn:aws:ec2:us-east-1:1234567890:instance/i-0987654321",
+                "RecommendationSourceType": "Ec2Instance"
+            }
+        ],
+        "UtilizationMetrics": [
+            {
+                "Name": "CPU",
+                "Statistic": "MAXIMUM",
+                "Value": 55.5084745762712
+            },
+            {
+                "Name": "EBS_READ_OPS_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 753.56
+            },
+            {
+                "Name": "EBS_WRITE_OPS_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 917.98
+            },
+            {
+                "Name": "EBS_READ_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 89428489.58333333
+            },
+            {
+                "Name": "EBS_WRITE_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 83148230.79666667
+            },
+            {
+                "Name": "NETWORK_IN_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 414224.09777777776
+            },
+            {
+                "Name": "NETWORK_OUT_BYTES_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 29260.118055555555
+            },
+            {
+                "Name": "NETWORK_PACKETS_IN_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 177.9728888888889
+            },
+            {
+                "Name": "NETWORK_PACKETS_OUT_PER_SECOND",
+                "Statistic": "MAXIMUM",
+                "Value": 35.34688888888889
+            }
+        ]
+    }
+]
 ```
 
 ## Metrics Usage
