@@ -77,12 +77,18 @@ func toBudgetAlert(notification *budgets.Notification, subscribers []*budgets.Su
 		addresses = append(addresses, a)
 	}
 
+	// percentage notification type comes back unset
+	thresholdType := aws.StringValue(notification.ThresholdType)
+	if thresholdType == "" {
+		thresholdType = "PERCENTAGE"
+	}
+
 	return &BudgetAlert{
 		ComparisonOperator: aws.StringValue(notification.ComparisonOperator),
 		NotificationState:  aws.StringValue(notification.NotificationState),
 		NotificationType:   aws.StringValue(notification.NotificationType),
 		Threshold:          aws.Float64Value(notification.Threshold),
-		ThresholdType:      aws.StringValue(notification.ThresholdType),
+		ThresholdType:      thresholdType,
 		Addresses:          addresses,
 	}
 }
