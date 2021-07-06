@@ -83,11 +83,20 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if groupBy != "" {
-		input.GroupBy = []*costexplorer.GroupDefinition{
-			{
-				Key:  aws.String(groupBy),
-				Type: aws.String("DIMENSION"),
-			},
+		if groupBy == "RESOURCE_NAME" {
+			input.GroupBy = []*costexplorer.GroupDefinition{
+				{
+					Key:  aws.String("Name"),
+					Type: aws.String("TAG"),
+				},
+			}
+		} else {
+			input.GroupBy = []*costexplorer.GroupDefinition{
+				{
+					Key:  aws.String(groupBy),
+					Type: aws.String("DIMENSION"),
+				},
+			}
 		}
 	}
 
