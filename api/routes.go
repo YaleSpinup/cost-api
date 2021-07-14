@@ -46,6 +46,14 @@ func (s *server) routes() {
 	metricsApi.HandleFunc("/{account}/buckets/{bucket}/graph", s.GetS3MetricsURLHandler).Queries("metric", "{metric:(?:BucketSizeBytes|NumberOfObjects)}").Methods(http.MethodGet)
 	// metrics endpoints for RDS services
 	metricsApi.HandleFunc("/{account}/rds/{type}/{id}/graph", s.GetRDSMetricsURLHandler).Methods(http.MethodGet)
+
+	inventoryApi := s.router.PathPrefix("/v1/inventory").Subrouter()
+	inventoryApi.HandleFunc("/ping", s.PingHandler).Methods(http.MethodGet)
+	inventoryApi.HandleFunc("/version", s.VersionHandler).Methods(http.MethodGet)
+	inventoryApi.Handle("/metrics", promhttp.Handler()).Methods(http.MethodGet)
+
+	// inventory endpoints for a space
+	inventoryApi.HandleFunc("/{account}/spaces/{space}", s.SpaceInventoryGetHandler).Methods(http.MethodGet)
 }
 
 // custom matcher for space queries
