@@ -23,6 +23,8 @@ GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric
 GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 ##################
 
+GET /v1/inventory/{account}/spaces/{spaceid}
+
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/clusters/{cluster}/services/{service}/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
 GET /v1/metrics/{account}/buckets/{bucket}/graph?metric={BucketSizeBytes|NumberOfObjects}
@@ -674,6 +676,60 @@ Empty response is usually a result of not enough data for a recommendation.
     }
 ]
 ```
+
+## Inventory Usage
+
+The inventory endpoint returns resources belonging to a space by tag.  It uses the resourcegroupstaggingapi and also parses the ARN to
+determine the resource type information.  Since the `resource` prefix is inconsistent, it shouldn't be relied upon for categorization, but the
+`service` should be accurate.
+
+### Request
+
+GET /v1/inventory/{account}/spaces/{spaceid}
+
+### Response
+
+```json
+[
+    {
+        "name": "spintst-000a16-TestFS",
+        "arn": "arn:aws:elasticfilesystem:us-east-1:1234567890:file-system/fs-aaaabbbb11",
+        "partition": "aws",
+        "service": "elasticfilesystem",
+        "region": "us-east-1",
+        "account_id": "1234567890",
+        "resource": "file-system/fs-aaaabbbb11"
+    },
+    {
+        "name": "",
+        "arn": "arn:aws:elasticloadbalancing:us-east-1:1234567890:targetgroup/testTargetGroup-HTTP80/abcdefg12",
+        "partition": "aws",
+        "service": "elasticloadbalancing",
+        "region": "us-east-1",
+        "account_id": "1234567890",
+        "resource": "targetgroup/testTargetGroup-HTTP80/abcdefg12"
+    },
+    {
+        "name": "spintst-000028",
+        "arn": "arn:aws:logs:us-east-1:1234567890:log-group:spintst-000028",
+        "partition": "aws",
+        "service": "logs",
+        "region": "us-east-1",
+        "account_id": "1234567890",
+        "resource": "log-group:spintst-000028"
+    },
+    {
+        "name": "spintst-000b67-webServiceTest",
+        "arn": "arn:aws:secretsmanager:us-east-1:1234567890:secret:spinup/sstst/spintst-000028/spintst-000b67-webServiceTest-api-cred-ibdIk7",
+        "partition": "aws",
+        "service": "secretsmanager",
+        "region": "us-east-1",
+        "account_id": "1234567890",
+        "resource": "secret:spinup/sstst/spintst-000028/spintst-000b67-webServiceTest-api-cred-ibdIk7"
+    }
+]
+```
+
 
 ## Metrics Usage
 

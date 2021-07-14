@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/YaleSpinup/cost-api/budgets"
 	"github.com/YaleSpinup/cost-api/computeoptimizer"
+	"github.com/YaleSpinup/cost-api/resourcegroupstaggingapi"
 	"github.com/YaleSpinup/cost-api/sns"
 )
 
@@ -27,6 +28,18 @@ type optimizerOrchestrator struct {
 
 func newOptimizerOrchestrator(client *computeoptimizer.ComputeOptimizer, org string) *optimizerOrchestrator {
 	return &optimizerOrchestrator{
+		client: client,
+		org:    org,
+	}
+}
+
+type inventoryOrchestrator struct {
+	client *resourcegroupstaggingapi.ResourceGroupsTaggingAPI
+	org    string
+}
+
+func newInventoryOrchestrator(client *resourcegroupstaggingapi.ResourceGroupsTaggingAPI, org string) *inventoryOrchestrator {
+	return &inventoryOrchestrator{
 		client: client,
 		org:    org,
 	}
