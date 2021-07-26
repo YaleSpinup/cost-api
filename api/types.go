@@ -4,7 +4,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/budgets"
+	"github.com/aws/aws-sdk-go/service/resourcegroupstaggingapi"
 	"github.com/aws/aws-sdk-go/service/sns"
+	log "github.com/sirupsen/logrus"
 )
 
 // BudgetCreateRequest is the request object to create a Budget
@@ -112,4 +114,39 @@ func toSnsTag(tags []*Tag) []*sns.Tag {
 	}
 
 	return snsTags
+}
+
+type InventoryResponse struct {
+	Name      string `json:"name"`
+	ARN       string `json:"arn"`
+	Partition string `json:"partition"`
+	Service   string `json:"service"`
+	Region    string `json:"region"`
+	AccountID string `json:"account_id"`
+	Resource  string `json:"resource"`
+}
+
+func toInventoryResponse(i *resourcegroupstaggingapi.ResourceTagMapping) *InventoryResponse {
+	var name string
+	for _, tag := range i.Tags {
+		if aws.StringValue(tag.Key) == "Name" {
+			name = aws.StringValue(tag.Value)
+		}
+	}
+
+	resourceArn := aws.StringValue(i.ResourceARN)
+	a, err := arn.Parse(resourceArn)
+	if err != nil {
+		log.Warnf("failed to parse resource ARN: %s", resourceArn)
+	}
+
+	return &InventoryResponse{
+		Name:      name,
+		ARN:       aws.StringValue(i.ResourceARN),
+		Partition: a.Partition,
+		Service:   a.Service,
+		Region:    a.Region,
+		AccountID: a.AccountID,
+		Resource:  a.Resource,
+	}
 }

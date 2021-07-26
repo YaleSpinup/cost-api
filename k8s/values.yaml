@@ -15,6 +15,6 @@ ingress:
   enabled: true
   annotations: {}
   rules:
-    - paths: ['/v1/cost', '/v1/metrics']
+    - paths: ['/v1/cost', '/v1/metrics', '/v1/inventory']
 
 probePath: '/v1/cost/ping'
