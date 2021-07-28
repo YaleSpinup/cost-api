@@ -17,6 +17,7 @@ import (
 
 // assumeRole assumes the passed role arn.  if an externalId is set in the account to be accessed, it can be passed with the request.  inline
 // policy can be passed to limit the access for the session.  policy Arns can also be passed to limit access for the session.
+// Note: sessions live for 900s and will be cached for 600 seconds, giving a 300s buffer to avoid terminated sessions inside of orchestration
 func (s *server) assumeRole(ctx context.Context, externalId, roleArn, inlinePolicy string, policyArns ...string) (*session.Session, error) {
 	contextLogger := log.WithFields(log.Fields{
 		"role": roleArn,
