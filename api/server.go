@@ -31,6 +31,7 @@ type server struct {
 	optimizerCache       *cache.Cache
 	resultCache          map[string]*cache.Cache
 	imageCache           imagecache.ImageCache
+	sessionCache         *cache.Cache
 	org                  string
 }
 
@@ -47,6 +48,7 @@ func NewServer(config common.Config) error {
 		costExplorerServices: make(map[string]costexplorer.CostExplorer),
 		cloudwatchServices:   make(map[string]cloudwatch.Cloudwatch),
 		resultCache:          make(map[string]*cache.Cache),
+		sessionCache:         cache.New(600*time.Second, 900*time.Second),
 	}
 
 	if config.Org == "" {
