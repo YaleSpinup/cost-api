@@ -15,6 +15,11 @@
     "prefix": "costapi",
     "hashingToken": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb"
   },
+  "accountsMap": {
+    "spinup": "1234567890",
+    "spinupsec": "0987654321",
+    "sandbox": "00000000000"
+  },
   "token": "xxxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbbbb",
   "logLevel": "debug",
   "org": "localdev",

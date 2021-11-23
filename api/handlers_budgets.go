@@ -15,7 +15,7 @@ import (
 func (s *server) SpaceBudgetsCreatehandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	spaceID := vars["space"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
@@ -71,7 +71,7 @@ func (s *server) SpaceBudgetsCreatehandler(w http.ResponseWriter, r *http.Reques
 func (s *server) SpaceBudgetsListHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	spaceID := vars["space"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
@@ -120,7 +120,7 @@ func (s *server) SpaceBudgetsListHandler(w http.ResponseWriter, r *http.Request)
 func (s *server) SpaceBudgetsShowHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	spaceID := vars["space"]
 	budget := vars["budget"]
 
@@ -170,7 +170,7 @@ func (s *server) SpaceBudgetsShowHandler(w http.ResponseWriter, r *http.Request)
 func (s *server) SpaceBudgetsDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	spaceID := vars["space"]
 	budget := vars["budget"]
 

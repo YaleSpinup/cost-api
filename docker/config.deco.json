@@ -19,6 +19,10 @@
     "externalId": "{{ .external_id }}",
     "role": "{{ .cross_account_role }}"
   },
+  "accountsMap": {
+    "spinup": "{{ .spinup_account_number }}",
+    "spinupsec": "{{ .spinupsec_account_number }}"
+  },
   "imageCache": {
     "region": "us-east-1",
     "bucket": "{{ .imagecache_bucket }}",

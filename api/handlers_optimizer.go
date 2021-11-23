@@ -15,7 +15,7 @@ import (
 func (s *server) SpaceInstanceOptimizer(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	instanceID := vars["id"]
 
 	var j []byte

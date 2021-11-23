@@ -37,7 +37,7 @@ func orgTagAccessPolicy(org string) (string, error) {
 }
 
 func budgetReadWritePolicy() (string, error) {
-	log.Debugf("generating org policy document")
+	log.Debugf("generating budget read/write policy document")
 
 	policy := iam.PolicyDocument{
 		Version: "2012-10-17",
@@ -50,6 +50,75 @@ func budgetReadWritePolicy() (string, error) {
 					"SNS:CreateTopic",
 					"SNS:DeleteTopic",
 					"SNS:Subscribe",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func costExplorerReadPolicy() (string, error) {
+	log.Debugf("generating cost explorer read policy document")
+
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Effect: "Allow",
+				Action: []string{
+					"ce:DescribeCostCategoryDefinition",
+					"ce:GetRightsizingRecommendation",
+					"ce:GetCostAndUsage",
+					"ce:GetSavingsPlansUtilization",
+					"ce:GetAnomalies",
+					"ce:GetReservationPurchaseRecommendation",
+					"ce:ListCostCategoryDefinitions",
+					"ce:GetCostForecast",
+					"ce:GetPreferences",
+					"ce:GetReservationUtilization",
+					"ce:GetCostCategories",
+					"ce:GetSavingsPlansPurchaseRecommendation",
+					"ce:GetDimensionValues",
+					"ce:GetSavingsPlansUtilizationDetails",
+					"ce:GetAnomalySubscriptions",
+					"ce:GetCostAndUsageWithResources",
+					"ce:DescribeReport",
+					"ce:GetReservationCoverage",
+					"ce:GetSavingsPlansCoverage",
+					"ce:GetAnomalyMonitors",
+					"ce:DescribeNotificationSubscription",
+					"ce:GetTags",
+					"ce:GetUsageForecast",
+				},
+				Resource: []string{"*"},
+			},
+		},
+	}
+
+	j, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(j), nil
+}
+
+func defaultCloudWatchMetricsPolicy() (string, error) {
+	policy := iam.PolicyDocument{
+		Version: "2012-10-17",
+		Statement: []iam.StatementEntry{
+			{
+				Sid:    "CloudWatchMetricsPermissions",
+				Effect: "Allow",
+				Action: []string{
+					"cloudwatch:GetMetricWidgetImage",
 				},
 				Resource: []string{"*"},
 			},

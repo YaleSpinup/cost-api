@@ -10,16 +10,17 @@ import (
 
 // Config is representation of the configuration data
 type Config struct {
-	ListenAddress   string
-	Accounts        map[string]Account
 	Account         Account
-	Token           string
-	LogLevel        string
-	Version         Version
-	Org             string
+	Accounts        map[string]Account
+	AccountsMap     map[string]string
 	CacheExpireTime string
 	CachePurgeTime  string
 	ImageCache      *S3Cache
+	ListenAddress   string
+	LogLevel        string
+	Org             string
+	Token           string
+	Version         Version
 }
 
 // Account is the configuration for an individual account
