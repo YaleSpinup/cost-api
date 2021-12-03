@@ -1,23 +1,15 @@
 { 
   "listenAddress": ":8080",
-  "accounts": {
-    "spinup": {
-      "region": "us-east-1",
-      "akid": "{{ .spinup_akid }}",
-      "secret": "{{ .spinup_secret }}"
-    },
-    "spinupsec": {
-      "region": "us-east-1",
-      "akid": "{{ .spinupsec_akid }}",
-      "secret": "{{ .spinupsec_secret }}"
-    }
-  },
   "account": {
     "region": "us-east-1",
     "akid": "{{ .akid }}",
     "secret": "{{ .secret }}",
     "externalId": "{{ .external_id }}",
     "role": "{{ .cross_account_role }}"
+  },
+  "accountsMap": {
+    "spinup": "{{ .spinup_account_number }}",
+    "spinupsec": "{{ .spinupsec_account_number }}"
   },
   "imageCache": {
     "region": "us-east-1",

@@ -4,24 +4,18 @@ This API provides simple restful API access to Amazon's Cost explorer and cloudw
 
 ## Endpoints
 
-```
+```text
 GET /v1/cost/ping
 GET /v1/cost/version
 GET /v1/cost/metrics
 
 GET /v1/cost/{account}/spaces/{spaceid}[?start=2019-10-01&end=2019-10-30][&groupBy=SERVICE]
-GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}[?start=2019-10-01&end=2019-10-30]
 
 POST /v1/cost/{account}/spaces/{spaceid}/budgets
 GET /v1/cost/{account}/spaces/{spaceid}/budgets
 DELETE /v1/cost/{account}/spaces/{spaceid}/budgets/{budget}
 
 GET /v1/cost/{account}/spaces/{space}/instances/{id}/optimizer
-
-### DEPRECATED ###
-GET /v1/cost/{account}/instances/{id}/metrics/graph.png?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
-GET /v1/cost/{account}/instances/{id}/metrics/graph?metric={metric1}[&metric={metric2}&start=-P1D&end=PT0H&period=300]
-##################
 
 GET /v1/inventory/{account}/spaces/{spaceid}
 
@@ -40,9 +34,7 @@ different dimensions is supported by passing query parameters.
 
 #### Request month to date costs for a space
 
-```
 GET /v1/cost/{account}/spaces/{spaceid}
-```
 
 #### Response
 
@@ -75,9 +67,7 @@ GET /v1/cost/{account}/spaces/{spaceid}
 
 #### Request costs for a space for a date range
 
-```
 GET /v1/cost/{account}/spaces/{spaceid}?start=2021-04-01&end=2021-05-31
-```
 
 #### Response
 
@@ -132,9 +122,7 @@ GET /v1/cost/{account}/spaces/{spaceid}?start=2021-04-01&end=2021-05-31
 
 #### Request costs for a space by date range and grouped by a dimension
 
-```
 GET /v1/cost/{account}/spaces/{spaceid}?start=2021-04-01&end=2021-05-31&groupby=INSTANCE_TYPE_FAMILY
-```
 
 Supported default 'groupby' values are AZ, INSTANCE_TYPE, LINKED_ACCOUNT, OPERATION, PURCHASE_TYPE, SERVICE, USAGE_TYPE, PLATFORM, TENANCY, RECORD_TYPE, LEGAL_ENTITY_NAME, DEPLOYMENT_OPTION, DATABASE_ENGINE, CACHE_ENGINE, INSTANCE_TYPE_FAMILY, REGION, BILLING_ENTITY, RESERVATION_ID, SAVINGS_PLANS_TYPE, SAVINGS_PLAN_ARN, OPERATING_SYSTEM. In addition, the custom RESOURCE_NAME 'groupby' is supported using the Name tag.
 
@@ -315,54 +303,6 @@ Supported default 'groupby' values are AZ, INSTANCE_TYPE, LINKED_ACCOUNT, OPERAT
         "Total": {}
     }
 ]
-```
-
-### Get the cost and usage for a resource (name) within a space ID
-
-By default, this will get the month to date costs for a resource name with a space id
-
-```
-GET /v1/cost/{account}/spaces/{spaceid}/{resourcename}
-```
-
-### How it works
-
-Costs are Filtered - the keys/values are resource tags
-
-```json
-{
-  "Filter": {
-    "And": [
-      {
-        "Tags": {
-          "Key": "Name",
-          "Values": ["spinup-000cba.spinup.yale.edu"]
-        }
-      },
-      {
-        "Tags": {
-          "Key": "spinup:spaceid",
-          "Values": ["spinup-0002a2"]
-        }
-      },
-      {
-        "Or": [
-          {
-            "Tags": {
-              "Key": "yale:org",
-              "Values": ["ss"]
-            }
-          },
-          {
-            "Tags": {
-              "Key": "spinup:org",
-              "Values": ["ss"]
-            }
-          }]
-      }
-    ]
-  }
-}
 ```
 
 ## Budget Usage
@@ -733,28 +673,31 @@ GET /v1/inventory/{account}/spaces/{spaceid}
 
 ## Metrics Usage
 
-### Get cloudwatch metrics widgets URL from S3 for an instance ID
+### Get Cloudwatch metrics widgets URL from S3 for an instance ID
 
 This will get the passed metric(s) for the passed instance ID or container cluster/service in a `image/png` graph for the past 1 day by default, cache it in S3
 and return the URL. URLs are cached in the API for 5 minutes, the images should be purged from the S3 cache on a schedule. It's also
 possible to pass the height, width, start time, end time and period (e. `300s` for 300 seconds, `5m` for 5 minutes).  Query parameters must follow
 the [CloudWatch Metric Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html).
 
-### Documentation on cloudwatch metrics
+### Documentation on Cloudwatch metrics
 
+#### Get a list of metrics per AWS service
+
+```bash
+aws --region us-east-1 cloudwatch list-metrics --namespace AWS/RDS |grep MetricName |sort| uniq
 ```
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
 
-Get you a list of metrics per AWS service
-$ aws --region us-east-1 cloudwatch list-metrics --namespace AWS/RDS |grep MetricName |sort| uniq
+#### Helpful references
 
-GetMetricWidget gets a metric widget image for an instance id
-https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html
-https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html
-https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/MonitoringOverview.html
+* [Viewing Metrics with CloudWatch](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html)
+* [CloudWatch Metrics Widget Structure](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/CloudWatch-Metric-Widget-Structure.html)
+* [CloudWatch Metrics Developer Guide](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html)
+* [AWS Aurora Monitoring Overview](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/MonitoringOverview.html)
 
-Example metrics request
+#### Example metrics request
+
+```json
 {
   "metrics": [
     [ "AWS/ECS", "CPUUtilization", "ClusterName", "spinup-000393", "ServiceName", "spinup-0010a3-testsvc" ]
@@ -768,7 +711,7 @@ Example metrics request
 
 #### Request
 
-```
+```text
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&....]
 GET /v1/metrics/{account}/instances/{id}/graph?metric={metric1}[&metric={metric2}&start={start}&end={end}&period={period}]
 

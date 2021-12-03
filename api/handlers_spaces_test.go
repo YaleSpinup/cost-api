@@ -11,9 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/costexplorer"
 )
 
-func TestGetTimeDefault(t *testing.T) {
+func TestParseTime(t *testing.T) {
 	// use defaults derived in code
-	startTime, endTime := getTimeDefault()
+	startResult, endResult, err := parseTime("", "")
+	if err != nil {
+		t.Errorf("unexpected error from parseTime: %s", err)
+	}
 
 	// tests should match defaults from getTimeDefault
 	y, m, d := time.Now().Date()
@@ -24,13 +27,13 @@ func TestGetTimeDefault(t *testing.T) {
 	sTime := fmt.Sprintf("%d-%02d-01", y, m)
 	eTime := fmt.Sprintf("%d-%02d-%02d", y, m, d)
 
-	if startTime == sTime {
+	if startResult == sTime {
 		t.Logf("got expected default sTime: %s\n", sTime)
 	} else {
 		t.Errorf("got unexpected sTime: %s\n", sTime)
 	}
 
-	if endTime == eTime {
+	if endResult == eTime {
 		t.Logf("got expected default eTime: %s\n", eTime)
 	} else {
 		t.Errorf("got unexpected eTime: %s\n", eTime)
@@ -40,24 +43,21 @@ func TestGetTimeDefault(t *testing.T) {
 	sTime = "2006-01-02"
 	eTime = "2006-13-40"
 
-	if startTime != sTime {
-		t.Logf("negative test sTime: %s does not match: %s", sTime, startTime)
+	if startResult != sTime {
+		t.Logf("negative test sTime: %s does not match: %s", sTime, startResult)
 	} else {
 		t.Errorf("got unexpected sTime: %s\n", sTime)
 	}
-	if endTime != eTime {
-		t.Logf("negative test eTime: %s does not match: %s", eTime, endTime)
+	if endResult != eTime {
+		t.Logf("negative test eTime: %s does not match: %s", eTime, endResult)
 	} else {
 		t.Errorf("got unexpected eTime: %s\n", eTime)
 	}
 
-}
-
-func TestGetTimeAPI(t *testing.T) {
 	startTime := "2019-11-01"
 	endTime := "2019-11-30"
 
-	startResult, endResult, err := getTimeAPI(startTime, endTime)
+	startResult, endResult, err = parseTime(startTime, endTime)
 	if err != nil {
 		t.Errorf("got unexpected error: %s", err)
 	}
@@ -70,10 +70,10 @@ func TestGetTimeAPI(t *testing.T) {
 
 	// negative tests for non-matching API inputs from getTimeDefault
 	// bad start time fails
-	sTime := "2006-01-022"
-	eTime := "2006-12-02"
+	startTime = "2006-01-022"
+	endTime = "2006-12-02"
 
-	neg00startResult, neg00endResult, err := getTimeAPI(sTime, eTime)
+	neg00startResult, neg00endResult, err := parseTime(startTime, endTime)
 	if err != nil {
 		t.Logf("negative test got expected error: %s", err)
 	}
@@ -85,10 +85,10 @@ func TestGetTimeAPI(t *testing.T) {
 	}
 
 	// bad end time fails
-	sTime = "2006-01-02"
-	eTime = "2006-12-403"
+	startTime = "2006-01-02"
+	endTime = "2006-12-403"
 
-	neg01startResult, neg01endResult, err := getTimeAPI(sTime, eTime)
+	neg01startResult, neg01endResult, err := parseTime(startTime, endTime)
 	if err != nil {
 		t.Logf("negative test got expected error: %s", err)
 	}
@@ -100,10 +100,10 @@ func TestGetTimeAPI(t *testing.T) {
 	}
 
 	// start after end fails
-	sTime = "2006-01-30"
-	eTime = "2006-01-01"
+	startTime = "2006-01-30"
+	endTime = "2006-01-01"
 
-	neg02startResult, neg02endResult, err := getTimeAPI(sTime, eTime)
+	neg02startResult, neg02endResult, err := parseTime(startTime, endTime)
 	if err != nil {
 		t.Logf("negative test got expected error for start after end : %s", err)
 	}
@@ -113,6 +113,7 @@ func TestGetTimeAPI(t *testing.T) {
 	if neg02endResult == endTime {
 		t.Logf("negative test got expected neg02endResult from getTimeAPI: %s", neg02endResult)
 	}
+
 }
 
 func TestInSpace(t *testing.T) {

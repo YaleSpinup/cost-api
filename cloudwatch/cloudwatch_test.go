@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/YaleSpinup/cost-api/common"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
 )
 
@@ -23,8 +22,8 @@ func newmockCloudwatchClient(t *testing.T, err error) cloudwatchiface.CloudWatch
 }
 
 func TestNewSession(t *testing.T) {
-	e := NewSession(common.Account{})
-	if to := reflect.TypeOf(e).String(); to != "cloudwatch.Cloudwatch" {
+	e := New()
+	if to := reflect.TypeOf(e).String(); to != "*cloudwatch.Cloudwatch" {
 		t.Errorf("expected type to be 'cloudwatch.Cloudwatch', got %s", to)
 	}
 }

@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/YaleSpinup/aws-go/services/session"
-	"github.com/YaleSpinup/cost-api/cloudwatch"
 	"github.com/YaleSpinup/cost-api/common"
-	"github.com/YaleSpinup/cost-api/costexplorer"
 	"github.com/YaleSpinup/cost-api/imagecache"
 	"github.com/YaleSpinup/cost-api/s3cache"
 	"github.com/gorilla/handlers"
@@ -20,19 +18,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	CacheExpireTime = 4 * time.Hour
+	CachePurgeTime  = 15 * time.Minute
+)
+
 type server struct {
-	router               *mux.Router
-	version              common.Version
-	context              context.Context
-	costExplorerServices map[string]costexplorer.CostExplorer
-	cloudwatchServices   map[string]cloudwatch.Cloudwatch
-	session              session.Session
-	orgPolicy            string
-	optimizerCache       *cache.Cache
-	resultCache          map[string]*cache.Cache
-	imageCache           imagecache.ImageCache
-	sessionCache         *cache.Cache
-	org                  string
+	accountsMap    map[string]string
+	router         *mux.Router
+	version        common.Version
+	context        context.Context
+	session        session.Session
+	orgPolicy      string
+	optimizerCache *cache.Cache
+	resultCache    *cache.Cache
+	imageCache     imagecache.ImageCache
+	sessionCache   *cache.Cache
+	org            string
 }
 
 // NewServer creates a new server and starts it
@@ -42,13 +44,11 @@ func NewServer(config common.Config) error {
 	defer cancel()
 
 	s := server{
-		router:               mux.NewRouter(),
-		version:              config.Version,
-		context:              ctx,
-		costExplorerServices: make(map[string]costexplorer.CostExplorer),
-		cloudwatchServices:   make(map[string]cloudwatch.Cloudwatch),
-		resultCache:          make(map[string]*cache.Cache),
-		sessionCache:         cache.New(600*time.Second, 900*time.Second),
+		accountsMap:  config.AccountsMap,
+		router:       mux.NewRouter(),
+		version:      config.Version,
+		context:      ctx,
+		sessionCache: cache.New(600*time.Second, 900*time.Second),
 	}
 
 	if config.Org == "" {
@@ -68,11 +68,12 @@ func NewServer(config common.Config) error {
 		config.CacheExpireTime = "4h"
 	}
 
-	expireTime, err := time.ParseDuration(config.CacheExpireTime)
+	exp, err := time.ParseDuration(config.CacheExpireTime)
 	if err != nil {
 		log.Error("Unexpected error with configured expiretime")
 		return err
 	}
+	CacheExpireTime = exp
 
 	if config.CachePurgeTime == "" {
 		// set default purgeTime
@@ -80,26 +81,18 @@ func NewServer(config common.Config) error {
 		config.CachePurgeTime = "15m"
 	}
 
-	purgeTime, err := time.ParseDuration(config.CachePurgeTime)
+	pt, err := time.ParseDuration(config.CachePurgeTime)
 	if err != nil {
 		log.Error("Unexpected error with configured purgetime")
 		return err
 	}
+	CachePurgeTime = pt
 
-	log.Debugf("creating new optimizer cache with expire time: %s and purge time: %s", expireTime.String(), purgeTime.String())
-	s.optimizerCache = cache.New(expireTime, purgeTime)
+	log.Debugf("creating new cost explorer result cache with expire time: %s and purge time: %s", CacheExpireTime, CachePurgeTime)
+	s.resultCache = cache.New(CacheExpireTime, CachePurgeTime)
 
-	// Create shared cost explorer sessions, cloudwatch sessions, and go-cache instances per account defined in the config
-	for name, c := range config.Accounts {
-		log.Debugf("creating new cost explorer service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, s.org)
-		s.costExplorerServices[name] = costexplorer.NewSession(c)
-
-		log.Debugf("creating new cloudwatch service for account '%s' with key '%s' in region '%s' (org: %s)", name, c.Akid, c.Region, s.org)
-		s.cloudwatchServices[name] = cloudwatch.NewSession(c)
-
-		log.Debugf("creating new result cache for account '%s' with expire time: %s and purge time: %s", name, expireTime.String(), purgeTime.String())
-		s.resultCache[name] = cache.New(expireTime, purgeTime)
-	}
+	log.Debugf("creating new optimizer cache with expire time: %s and purge time: %s", CacheExpireTime, CachePurgeTime)
+	s.optimizerCache = cache.New(CacheExpireTime, CachePurgeTime)
 
 	// Create a new session used for authentication and assuming cross account roles
 	log.Debugf("Creating new session with key '%s' in region '%s'", config.Account.Akid, config.Account.Region)
@@ -158,4 +151,12 @@ func (w LogWriter) Write(p []byte) (n int, err error) {
 		log.Errorf("Write failed: %v", err)
 	}
 	return
+}
+
+// if we have an entry for the account name, return the associated account number
+func (s *server) mapAccountNumber(name string) string {
+	if a, ok := s.accountsMap[name]; ok {
+		return a
+	}
+	return name
 }

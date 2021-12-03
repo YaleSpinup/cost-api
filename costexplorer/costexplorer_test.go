@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/YaleSpinup/cost-api/common"
 	"github.com/aws/aws-sdk-go/service/costexplorer/costexploreriface"
 )
 
@@ -23,8 +22,8 @@ func newmockCostExplorerClient(t *testing.T, err error) costexploreriface.CostEx
 }
 
 func TestNewSession(t *testing.T) {
-	e := NewSession(common.Account{})
-	if to := reflect.TypeOf(e).String(); to != "costexplorer.CostExplorer" {
-		t.Errorf("expected type to be 'costexplorer.CostExplorer', got %s", to)
+	e := New()
+	if to := reflect.TypeOf(e).String(); to != "*costexplorer.CostExplorer" {
+		t.Errorf("expected type to be '*costexplorer.CostExplorer', got %s", to)
 	}
 }

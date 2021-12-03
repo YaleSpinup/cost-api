@@ -18,24 +18,29 @@ import (
 func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	instanceId := vars["id"]
 
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	policy, err := defaultCloudWatchMetricsPolicy()
+	if err != nil {
+		handleError(w, err)
 		return
 	}
-	log.Debugf("found cloudwatch service %+v", cwService)
 
-	resultCache, ok := s.resultCache[account]
-	if !ok {
-		msg := fmt.Sprintf("result cache not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, nil))
 		return
 	}
-	log.Debugf("found cost explorer result cache %+v", *resultCache)
+
+	cwService := cloudwatch.New(cloudwatch.WithSession(session.Session))
 
 	queries := r.URL.Query()
 	metrics := queries["metric"]
@@ -50,9 +55,9 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", s.org, instanceId, strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
-	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
+	if res, expire, ok := s.resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
 
 		if body, ok := res.([]byte); ok {
@@ -85,7 +90,7 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-	resultCache.Set(hashedCacheKey, meta, 300*time.Second)
+	s.resultCache.Set(hashedCacheKey, meta, 300*time.Second)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -96,25 +101,30 @@ func (s *server) GetEC2MetricsURLHandler(w http.ResponseWriter, r *http.Request)
 func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	cluster := vars["cluster"]
 	service := vars["service"]
 
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	policy, err := defaultCloudWatchMetricsPolicy()
+	if err != nil {
+		handleError(w, err)
 		return
 	}
-	log.Debugf("found cloudwatch service %+v", cwService)
 
-	resultCache, ok := s.resultCache[account]
-	if !ok {
-		msg := fmt.Sprintf("result cache not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, nil))
 		return
 	}
-	log.Debugf("found cost explorer result cache %+v", *resultCache)
+
+	cwService := cloudwatch.New(cloudwatch.WithSession(session.Session))
 
 	queries := r.URL.Query()
 	metrics := queries["metric"]
@@ -129,11 +139,11 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", s.org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, fmt.Sprintf("%s-%s", cluster, service), strings.Join(metrics, "-"), req.String())
 	log.Debugf("object key: %s", key)
 
 	hashedCacheKey := s.imageCache.HashedKey(key)
-	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
+	if res, expire, ok := s.resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
 
 		if body, ok := res.([]byte); ok {
@@ -166,7 +176,7 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-	resultCache.Set(hashedCacheKey, meta, 300*time.Second)
+	s.resultCache.Set(hashedCacheKey, meta, 300*time.Second)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -177,25 +187,30 @@ func (s *server) GetECSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	bucketName := vars["bucket"]
 	metric := vars["metric"]
 
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	policy, err := defaultCloudWatchMetricsPolicy()
+	if err != nil {
+		handleError(w, err)
 		return
 	}
-	log.Debugf("found cloudwatch service %+v", cwService)
 
-	resultCache, ok := s.resultCache[account]
-	if !ok {
-		msg := fmt.Sprintf("result cache not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, nil))
 		return
 	}
-	log.Debugf("found cost explorer result cache %+v", *resultCache)
+
+	cwService := cloudwatch.New(cloudwatch.WithSession(session.Session))
 
 	// only support NumberOfObjects and BucketSizeBytes
 	var storageType string
@@ -220,11 +235,11 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", s.org, bucketName, metric, req.String())
+	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, bucketName, metric, req.String())
 	log.Debugf("object key: %s", key)
 
 	hashedCacheKey := s.imageCache.HashedKey(key)
-	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
+	if res, expire, ok := s.resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
 
 		if body, ok := res.([]byte); ok {
@@ -251,7 +266,7 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 		handleError(w, err)
 		return
 	}
-	resultCache.Set(hashedCacheKey, meta, 300*time.Second)
+	s.resultCache.Set(hashedCacheKey, meta, 300*time.Second)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -263,25 +278,30 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
-	account := vars["account"]
+	account := s.mapAccountNumber(vars["account"])
 	queryType := vars["type"]
 	instanceId := vars["id"]
 
-	cwService, ok := s.cloudwatchServices[account]
-	if !ok {
-		msg := fmt.Sprintf("cloudwatch service not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	policy, err := defaultCloudWatchMetricsPolicy()
+	if err != nil {
+		handleError(w, err)
 		return
 	}
-	log.Debugf("found cloudwatch service %+v", cwService)
 
-	resultCache, ok := s.resultCache[account]
-	if !ok {
-		msg := fmt.Sprintf("result cache not found for account: %s", account)
-		handleError(w, apierror.New(apierror.ErrNotFound, msg, nil))
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, nil))
 		return
 	}
-	log.Debugf("found cost explorer result cache %+v", *resultCache)
+
+	cwService := cloudwatch.New(cloudwatch.WithSession(session.Session))
 
 	queries := r.URL.Query()
 	metrics := queries["metric"]
@@ -296,9 +316,9 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	key := fmt.Sprintf("%s/%s/%s%s", s.org, instanceId, strings.Join(metrics, "-"), req.String())
+	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, instanceId, strings.Join(metrics, "-"), req.String())
 	hashedCacheKey := s.imageCache.HashedKey(key)
-	if res, expire, ok := resultCache.GetWithExpiration(hashedCacheKey); ok {
+	if res, expire, ok := s.resultCache.GetWithExpiration(hashedCacheKey); ok {
 		log.Debugf("found cached object: %s", res)
 
 		if body, ok := res.([]byte); ok {
@@ -340,7 +360,7 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 		handleError(w, err)
 		return
 	}
-	resultCache.Set(hashedCacheKey, meta, 300*time.Second)
+	s.resultCache.Set(hashedCacheKey, meta, 300*time.Second)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -1,7 +1,6 @@
 package cloudwatch
 
 import (
-	"github.com/YaleSpinup/cost-api/common"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,17 +11,40 @@ import (
 
 // Cloudwatch is a wrapper around the aws cloudwatch service with some default config info
 type Cloudwatch struct {
+	session *session.Session
 	Service cloudwatchiface.CloudWatchAPI
 }
 
-// NewSession creates a new cloudwatch session
-func NewSession(account common.Account) Cloudwatch {
-	c := Cloudwatch{}
-	log.Infof("creating new aws session for costexplorer with key id %s in region %s", account.Akid, account.Region)
-	sess := session.Must(session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(account.Akid, account.Secret, ""),
-		Region:      aws.String(account.Region),
-	}))
-	c.Service = cloudwatch.New(sess)
-	return c
+type CloudwatchOption func(*Cloudwatch)
+
+func New(opts ...CloudwatchOption) *Cloudwatch {
+	client := Cloudwatch{}
+
+	for _, opt := range opts {
+		opt(&client)
+	}
+
+	if client.session != nil {
+		client.Service = cloudwatch.New(client.session)
+	}
+
+	return &client
+}
+
+func WithSession(sess *session.Session) CloudwatchOption {
+	return func(client *Cloudwatch) {
+		log.Debug("using aws session")
+		client.session = sess
+	}
+}
+
+func WithCredentials(key, secret, token, region string) CloudwatchOption {
+	return func(client *Cloudwatch) {
+		log.Debugf("creating new session with key id %s in region %s", key, region)
+		sess := session.Must(session.NewSession(&aws.Config{
+			Credentials: credentials.NewStaticCredentials(key, secret, token),
+			Region:      aws.String(region),
+		}))
+		client.session = sess
+	}
 }
