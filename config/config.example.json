@@ -1,11 +1,11 @@
 { 
   "listenAddress": ":8080",
-  "accounts": {
-    "spinup": {
-      "region": "us-east-1",
-      "akid": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-      "secret": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
-    }
+  "account": {
+    "region": "us-east-1",
+    "akid": "xxxxxxxxxxxxxxxxxxxxxxxx",
+    "secret": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+    "externalId": "xxxxxxx-yyyy-zzzz-aaaa-bbbbbbbbb",
+    "role": "someRole"
   },
   "imageCache": {
     "region": "us-east-1",
