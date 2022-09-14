@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/YaleSpinup/apierror v0.1.0
 	github.com/YaleSpinup/aws-go v0.2.0
-	github.com/aws/aws-sdk-go v1.44.96
+	github.com/aws/aws-sdk-go v1.44.98
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
@@ -29,8 +29,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
-	golang.org/x/sys v0.0.0-20220909162455-aba9fc2a8ff2 // indirect
+	golang.org/x/sys v0.0.0-20220913175220-63ea55921009 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
