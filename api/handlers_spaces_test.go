@@ -21,7 +21,7 @@ func TestParseTime(t *testing.T) {
 	// tests should match defaults from getTimeDefault
 	y, m, d := time.Now().Date()
 	if d == 1 {
-		d = 5
+		d = 3
 	}
 
 	sTime := fmt.Sprintf("%d-%02d-01", y, m)
@@ -68,9 +68,9 @@ func TestParseTime(t *testing.T) {
 		t.Logf("got expected endResult from getTimeAPI: %s", endResult)
 	}
 
-	// negative tests for non-matching API inputs from getTimeDefault
-	// bad start time fails
-	startTime = "2006-01-022"
+	// // negative tests for non-matching API inputs from getTimeDefault
+	// // bad start time fails
+	startTime = "2006-01-02"
 	endTime = "2006-12-02"
 
 	neg00startResult, neg00endResult, err := parseTime(startTime, endTime)
@@ -84,9 +84,9 @@ func TestParseTime(t *testing.T) {
 		t.Logf("negative test got expected neg00_endResult from getTimeAPI: %s", neg00endResult)
 	}
 
-	// bad end time fails
+	// // bad end time fails
 	startTime = "2006-01-02"
-	endTime = "2006-12-403"
+	endTime = "2006-12-03"
 
 	neg01startResult, neg01endResult, err := parseTime(startTime, endTime)
 	if err != nil {
