@@ -39,6 +39,8 @@ func (s *server) routes() {
 	metricsApi.HandleFunc("/{account}/buckets/{bucket}/graph", s.GetS3MetricsURLHandler).Queries("metric", "{metric:(?:BucketSizeBytes|NumberOfObjects)}").Methods(http.MethodGet)
 	// metrics endpoints for RDS services
 	metricsApi.HandleFunc("/{account}/rds/{type}/{id}/graph", s.GetRDSMetricsURLHandler).Methods(http.MethodGet)
+	// metrics endpoints for DocumentDB services
+	metricsApi.HandleFunc("/{account}/docDB/{type}/{id}/graph", s.GetDocDBMetricsURLHandler).Methods(http.MethodGet)
 
 	inventoryApi := s.router.PathPrefix("/v1/inventory").Subrouter()
 	inventoryApi.HandleFunc("/ping", s.PingHandler).Methods(http.MethodGet)
