@@ -367,6 +367,100 @@ func (s *server) GetRDSMetricsURLHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(meta)
 }
 
+// GetDocDBMetricsURLHandler gets DocDB metrics from cloudwatch and returns a link to the image
+// Can use DocDBInstanceIdentifier or DocDBClusterIdentifier
+func (s *server) GetDocDBMetricsURLHandler(w http.ResponseWriter, r *http.Request) {
+	w = LogWriter{w}
+	vars := mux.Vars(r)
+	account := s.mapAccountNumber(vars["account"])
+	queryType := vars["type"]
+	id := vars["id"]
+
+	policy, err := defaultCloudWatchMetricsPolicy()
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
+	session, err := s.assumeRole(
+		r.Context(),
+		s.session.ExternalID,
+		role,
+		policy,
+	)
+	if err != nil {
+		msg := fmt.Sprintf("failed to assume role in account: %s", account)
+		handleError(w, apierror.New(apierror.ErrForbidden, msg, nil))
+		return
+	}
+
+	cwService := cloudwatch.New(cloudwatch.WithSession(session.Session))
+
+	queries := r.URL.Query()
+	metrics := queries["metric"]
+	if len(metrics) == 0 {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "at least one metric is required", nil))
+		return
+	}
+
+	req := cloudwatch.MetricsRequest{}
+	if err := parseQuery(r, req); err != nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "failed to parse query", err))
+		return
+	}
+
+	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, id, strings.Join(metrics, "-"), req.String())
+	hashedCacheKey := s.imageCache.HashedKey(key)
+	if res, expire, ok := s.resultCache.GetWithExpiration(hashedCacheKey); ok {
+		log.Debugf("found cached object: %s", res)
+
+		if body, ok := res.([]byte); ok {
+			w.Header().Set("X-Cache-Hit", "true")
+			w.Header().Set("X-Cache-Expire", fmt.Sprintf("%0.fs", time.Until(expire).Seconds()))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(body)
+			return
+		}
+	}
+
+	cwMetrics := []cloudwatch.Metric{}
+	for _, m := range metrics {
+		switch queryType {
+		case "instance":
+			cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/DocDB", m, "DBInstanceIdentifier", id})
+		case "cluster":
+			cwMetrics = append(cwMetrics, cloudwatch.Metric{"AWS/DocDB", m, "DBClusterIdentifier", id})
+		default:
+			msg := fmt.Sprintf("invalid type requested: %s", m)
+			handleError(w, apierror.New(apierror.ErrBadRequest, msg, nil))
+			return
+		}
+	}
+	req["metrics"] = cwMetrics
+
+	log.Debugf("getting metrics with request %+v", req)
+	image, err := cwService.GetMetricWidget(r.Context(), req)
+	if err != nil {
+		log.Errorf("failed getting metrics widget image: %s", err)
+		handleError(w, err)
+		return
+	}
+
+	meta, err := s.imageCache.Save(r.Context(), hashedCacheKey, image)
+	if err != nil {
+		log.Errorf("failed saving metrics widget image to cache: %s", err)
+		handleError(w, err)
+		return
+	}
+	s.resultCache.Set(hashedCacheKey, meta, 300*time.Second)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(meta)
+}
+
 func (s *server) GetDataSyncMetricsURLHandler(w http.ResponseWriter, r *http.Request) {
 	w = LogWriter{w}
 	vars := mux.Vars(r)
