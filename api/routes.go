@@ -41,6 +41,8 @@ func (s *server) routes() {
 	metricsApi.HandleFunc("/{account}/rds/{type}/{id}/graph", s.GetRDSMetricsURLHandler).Methods(http.MethodGet)
 	// metrics endpoints for DocumentDB services
 	metricsApi.HandleFunc("/{account}/docdb/{type}/{id}/graph", s.GetDocDBMetricsURLHandler).Methods(http.MethodGet)
+	// metrics endpoints for DataSync services
+	metricsApi.HandleFunc("/{account}/movers/{taskId}/graph", s.GetDataSyncMetricsURLHandler).Methods(http.MethodGet)
 
 	inventoryApi := s.router.PathPrefix("/v1/inventory").Subrouter()
 	inventoryApi.HandleFunc("/ping", s.PingHandler).Methods(http.MethodGet)
