@@ -225,14 +225,10 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	req := cloudwatch.MetricsRequest{
-		"period": int64(86400),
-		"stat":   "Maximum",
-		"start":  "-P30D",
-		"end":    "PT0H",
-		"metrics": []cloudwatch.Metric{
-			{"AWS/S3", metric, "StorageType", storageType, "BucketName", bucketName},
-		},
+	req := cloudwatch.MetricsRequest{}
+	if err := parseQuery(r, req); err != nil {
+		handleError(w, apierror.New(apierror.ErrBadRequest, "failed to parse query", err))
+		return
 	}
 
 	key := fmt.Sprintf("%s/%s/%s/%s%s", account, s.org, bucketName, metric, req.String())
@@ -250,6 +246,10 @@ func (s *server) GetS3MetricsURLHandler(w http.ResponseWriter, r *http.Request) 
 			w.Write(body)
 			return
 		}
+	}
+
+	req["metrics"] = []cloudwatch.Metric{
+		{"AWS/S3", metric, "StorageType", storageType, "BucketName", bucketName},
 	}
 
 	log.Debugf("getting metrics with request %+v", req)
