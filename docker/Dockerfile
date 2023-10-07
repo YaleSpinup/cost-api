@@ -32,7 +32,7 @@ RUN apk add --no-cache bash ca-certificates
 ARG DECO_VERSION=1.4.1
 ARG DECO_OS=linux
 ARG DECO_ARCH=amd64
-ADD https://github.com/YaleUniversity/deco/releases/download/v${DECO_VERSION}/deco_${DECO_VERSION}_${DECO_OS}_${DECO_ARCH} /usr/local/bin/deco
+ADD https://github.com/YaleUniversity/deco/releases/download/v${DECO_VERSION}/deco_${DECO_VERSION}_${DECO_OS}_${DECO_ARCH}.tar.gz /usr/local/bin/deco
 RUN chmod 555 /usr/local/bin/deco && deco version
 
 COPY docker/*_config.sh /app
