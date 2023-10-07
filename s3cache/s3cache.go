@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/fossoreslp/go-uuid-v4"
 
 	"github.com/YaleSpinup/cost-api/common"
 	"github.com/aws/aws-sdk-go/aws"
@@ -14,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -59,7 +59,8 @@ func New(s3cache *common.S3Cache) *S3Cache {
 	if s3cache.HashingToken != "" {
 		s.HashingToken = s3cache.HashingToken
 	} else {
-		s.HashingToken = uuid.NewV4().String()
+		uuidv4, _ := uuid.New()
+		s.HashingToken = uuidv4.String()
 	}
 
 	return &s
