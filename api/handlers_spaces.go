@@ -21,6 +21,7 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	endTime := vars["end"]
 	spaceID := vars["space"]
 	groupBy := vars["groupby"]
+	granularity := vars["granularity"]
 
 	role := fmt.Sprintf("arn:aws:iam::%s:role/%s", account, s.session.RoleName)
 	policy, err := costExplorerReadPolicy()
@@ -37,11 +38,12 @@ func (s *server) SpaceGetHandler(w http.ResponseWriter, r *http.Request) {
 	out, cached, expire, err := orch.getCostAndUsageForSpace(
 		r.Context(),
 		&costAndUsageReq{
-			account: account,
-			spaceID: spaceID,
-			start:   startTime,
-			end:     endTime,
-			groupBy: groupBy,
+			account:     account,
+			spaceID:     spaceID,
+			start:       startTime,
+			end:         endTime,
+			groupBy:     groupBy,
+			granularity: granularity,
 		},
 	)
 	if err != nil {
