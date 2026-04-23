@@ -83,5 +83,9 @@ func matchSpaceQueries(req *http.Request, r *mux.RouteMatch) bool {
 		r.Vars["groupby"] = g[0]
 	}
 
+	if g, ok := queries["granularity"]; ok {
+		r.Vars["granularity"] = g[0]
+	}
+
 	return true
 }

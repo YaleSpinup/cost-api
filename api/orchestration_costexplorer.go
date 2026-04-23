@@ -13,7 +13,7 @@ import (
 )
 
 type costAndUsageReq struct {
-	account, spaceID, start, end, groupBy string
+	account, spaceID, start, end, groupBy, granularity string
 }
 
 func (o *costExplorerOrchestrator) getCostAndUsageForSpace(ctx context.Context, req *costAndUsageReq) ([]*costexplorer.ResultByTime, bool, time.Duration, error) {
@@ -22,9 +22,14 @@ func (o *costExplorerOrchestrator) getCostAndUsageForSpace(ctx context.Context, 
 		return nil, false, 0, nil
 	}
 
+	granularity := "MONTHLY"
+	if req.granularity == "DAILY" {
+		granularity = "DAILY"
+	}
+
 	input := costexplorer.GetCostAndUsageInput{
 		Filter:      ce.And(inSpace(req.spaceID), inOrg(o.server.org), notTryIT()),
-		Granularity: aws.String("MONTHLY"),
+		Granularity: aws.String(granularity),
 		Metrics: []*string{
 			aws.String("BLENDED_COST"),
 			aws.String("UNBLENDED_COST"),
@@ -57,7 +62,7 @@ func (o *costExplorerOrchestrator) getCostAndUsageForSpace(ctx context.Context, 
 	// Since we will accept date-range cost exploring and grouping, concatenate
 	// the spaceID, the start time, end time and group by so we can cache each
 	// time-based result
-	cacheKey := fmt.Sprintf("%s_%s_%s_%s_%s", req.account, req.spaceID, req.start, req.end, req.groupBy)
+	cacheKey := fmt.Sprintf("%s_%s_%s_%s_%s_%s", req.account, req.spaceID, req.start, req.end, req.groupBy, granularity)
 
 	log.Debugf("cacheKey: %s", cacheKey)
 
